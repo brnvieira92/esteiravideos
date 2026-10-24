@@ -1,4 +1,4 @@
-param([string]$Version = '0.2.0')
+﻿param([string]$Version = '0.2.0')
 $ErrorActionPreference = 'Stop'
 Set-Location (Join-Path $PSScriptRoot '..')
 if ($env:OS -ne 'Windows_NT') { throw 'O instalador Windows deve ser compilado no Windows (ou GitHub Actions).' }

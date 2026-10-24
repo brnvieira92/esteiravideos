@@ -1,5 +1,6 @@
 # Run from repository root: pyinstaller packaging/EsteiraVideos.spec --noconfirm --clean
 from pathlib import Path
+import os
 from PyInstaller.utils.hooks import collect_submodules, copy_metadata
 root = Path(SPECPATH).parent
 vendor = root / 'build' / 'vendor'
@@ -9,7 +10,7 @@ for package in ('fastapi', 'starlette', 'uvicorn', 'pydantic', 'anyio'):
     datas += copy_metadata(package)
 a = Analysis([str(root / 'packaging' / 'launcher.py')],
              pathex=[str(root), str(root / 'packaging')],
-             binaries=[(str(vendor / 'ffmpeg' / name), 'ffmpeg') for name in ('ffmpeg.exe', 'ffprobe.exe')],
+             binaries=[(str(vendor / 'ffmpeg' / name), 'ffmpeg') for name in (('ffmpeg.exe', 'ffprobe.exe') if os.name == 'nt' else ('ffmpeg', 'ffprobe'))],
              datas=datas,
              hiddenimports=collect_submodules('uvicorn') + ['backend.app','backend.worker','packaging_smoke'],
              excludes=['pytest', 'httpx', 'tkinter'], noarchive=False)
