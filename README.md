@@ -68,7 +68,7 @@ Se o player não conseguir reproduzir um codec, use **Gerar cópia compatível**
 
 O servidor imprime o endereço IPv4 e um código de pareamento válido por 10 minutos. Abra o endereço no celular e digite o código na tela (não em uma URL). Se a descoberta mostrar um adaptador incorreto, consulte `ipconfig` e use o IPv4 do Wi-Fi. Se necessário, autorize manualmente Python no Firewall do Windows **somente para redes privadas**. Não abra portas no roteador nem use túnel público.
 
-O modo LAN exige pareamento também no navegador do PC. O cookie é HttpOnly/SameSite Strict, dura até 24 horas e as sessões são invalidadas no reinício. Há limite de 5 tentativas por minuto por IP, validação de origem e cabeçalho obrigatório contra CSRF nas alterações. O HTTP local não cifra os vídeos: use apenas uma rede privada confiável. A aplicação não configura HTTPS. Reinicie para gerar outro código após expiração. O terminal exibe o código; logs de acesso HTTP ficam desativados.
+O modo LAN exige pareamento também no navegador do PC. O cookie é HttpOnly/SameSite Strict, dura até 24 horas e as sessões são invalidadas no reinício. Há limite de 5 tentativas por minuto por IP, validação de origem e cabeçalho obrigatório contra CSRF nas alterações. O modo legado `--lan` sem `--https` usa HTTP e não permite gravar câmera pelo celular. O atalho Wi-Fi usa HTTPS na versão 0.4.1; consulte a configuração abaixo. Reinicie para gerar outro código após expiração. O terminal exibe o código; logs de acesso HTTP ficam desativados.
 
 O computador deve permanecer ligado. Ao perder conexão, a interface informa o problema e consulta novamente a fila quando reconecta. Exportações usam um identificador por requisição para impedir duplicação no backend; a interface não reenvia exportações automaticamente.
 
@@ -145,7 +145,7 @@ Se o codec da reação não tocar no navegador, use **Gerar cópia compatível d
 
 ### Gravar câmera e voz enquanto assiste
 
-Faça isso no **Chrome ou Edge do computador**, usando o endereço **localhost ou 127.0.0.1** aberto pelo aplicativo. Câmera/microfone exigem contexto seguro; o endereço HTTP do computador no Wi-Fi não permite captura em navegadores comuns. No celular pela rede, envie uma reação já gravada e revise os resultados. Não é necessário criar outra rede nem desativar a internet.
+Faça isso no **Chrome ou Edge do computador**, usando o endereço **localhost ou 127.0.0.1** aberto pelo aplicativo. Câmera/microfone exigem contexto seguro; o endereço HTTP do computador no Wi-Fi não permite captura em navegadores comuns. Na versão 0.4.1, também é possível gravar no celular pelo HTTPS após configurar o certificado (veja abaixo). Não é necessário criar outra rede nem desativar a internet.
 
 1. Se for usar **Iriun Webcam**, abra e conecte o aplicativo/telefone e instale o driver oficial no Windows antes. O EsteiraVídeos não instala nem controla o Iriun: ele usa a câmera virtual que o driver disponibiliza ao navegador. Também pode usar webcam USB ou integrada.
 2. Em **Modo react → Gravar agora**, clique em **Ativar câmera e microfone** e autorize o navegador. Após a autorização, a lista mostra os nomes dos dispositivos.
@@ -160,3 +160,20 @@ A captura usa MediaRecorder e grava chunks em arquivo temporário no disco do na
 WebM de navegador é remuxado localmente, sem recodificar os originais, para obter duração e navegação confiáveis. São mantidos tanto o arquivo recebido (`.original.webm` ou `.original.mp4`) quanto a cópia com índice. Reserve espaço para essas cópias, o temporário do navegador e as exportações. Excluir um resultado não apaga a reação original; Excluir projeto remove seus arquivos após confirmação.
 
 O banco migra automaticamente da versão 2 para a **versão 3**, mantendo os projetos antigos como fonte base. Faça backup da pasta de dados com o programa fechado antes de atualizar; versões anteriores não abrem o banco versão 3. Webcam física e Iriun dependem das permissões/driver do seu Windows. A captura foi testada com dispositivos de câmera/microfone fornecidos pelo Chromium para testes; isso não substitui teste do seu hardware.
+
+## Gravar pelo celular com HTTPS (0.4.1)
+
+1. Feche o aplicativo e instale a versão nova sobre a anterior; não precisa desinstalar.
+2. Abra **EsteiraVídeos — acesso pelo Wi-Fi** no Windows. O atalho inicia HTTPS na porta 8000 e uma página de configuração na porta 8001.
+3. Com o celular no mesmo Wi-Fi, abra o endereço **Configurar celular (primeiro acesso)** impresso no terminal (`http://IP-DO-PC:8001`). Se o Firewall perguntar, permita apenas na rede privada. Ambas as portas precisam estar acessíveis.
+4. Compare a impressão SHA-256 da página com a do terminal. Baixe o certificado e instale conforme as instruções Android/iPhone da página. No iPhone, ative também a confiança total em Ajustes → Geral → Sobre → Ajustes de Confiança de Certificado. Essa configuração é feita uma vez por computador e dispositivo.
+5. Abra o endereço **HTTPS** listado (`https://IP-DO-PC:8000`), sem avisos de certificado. Informe o código de pareamento do terminal. Entre no projeto → **Modo react → Gravar agora**, ative câmera/microfone e autorize no navegador. Use Chrome no Android ou Safari no iPhone atualizados.
+6. Mantenha a aba em primeiro plano e a tela desbloqueada durante a gravação. Ao parar, a reação é enviada para o computador e pode ser combinada com o vídeo base. O PC precisa continuar ligado e com o aplicativo aberto. Fones ajudam a evitar que o áudio do vídeo entre pelo microfone.
+
+A página HTTP serve exclusivamente instruções e o certificado **público**; não expõe projetos, vídeos, API, código de pareamento nem chaves. Ignorar um aviso HTTPS não equivale a confiar no certificado e pode continuar bloqueando a câmera. A instalação da CA permite confiar nas conexões assinadas por esta instalação: só instale o certificado do seu computador. Para remover, exclua a CA EsteiraVideos nas configurações de certificados/perfis do dispositivo. Nenhuma confiança é instalada automaticamente pelo aplicativo.
+
+Os certificados e as chaves ficam em `%LOCALAPPDATA%\esteira-videos\https`. Não compartilhe arquivos `.key` nem backups dessa pasta. A CA permanece por até 10 anos; o certificado do servidor é renovado automaticamente ao vencer ou mudar o IP, preservando a CA. Reinicie o aplicativo se o IP do Wi-Fi mudar e abra o novo endereço. Se perder a pasta `https`, será necessário remover a CA antiga do celular e instalar a nova. Não abra portas no roteador nem exponha o servidor na internet.
+
+Executando pelo código-fonte: `.venv\Scripts\python -m backend.run --lan --https --open-browser`. Opcionalmente, `--port 8443 --setup-port 8444`. O atalho normal continua usando HTTP apenas em localhost para o computador. No modo HTTPS, a página inicial também contém instruções para confiar no certificado no Windows. Sessões e gravações temporárias do navegador pertencem a cada endereço: finalize ou baixe gravações pendentes antes de trocar de HTTP para HTTPS.
+
+Limite de validação: HTTPS e gravação foram exercitados em Chromium com dispositivos de teste; não houve teste com câmera física de Android/iPhone. Navegadores antigos, permissões do sistema e bloqueios de dispositivos gerenciados podem impedir a captura.

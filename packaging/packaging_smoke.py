@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import re
 import signal
+import ssl
 import socket
 import subprocess
 import sys
@@ -28,12 +29,18 @@ def main():
         reaction_source=root/'reaction.mp4'
         subprocess.run([ffmpeg,'-v','error','-f','lavfi','-i','color=red:s=240x320:r=24:d=2',
                         '-f','lavfi','-i','sine=frequency=880:duration=2','-c:v','libx264','-threads','1','-c:a','aac',str(reaction_source)],check=True)
-        for lan in (False, True):
+        for mode in ('local', 'lan', 'https'):
+            lan = mode != 'local'
+            secure = mode == 'https'
+            opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
             with socket.socket() as sock:
                 sock.bind(('127.0.0.1', 0))
                 port = sock.getsockname()[1]
-            url = f'http://127.0.0.1:{port}'
-            env = {**os.environ, 'ESTEIRA_DATA': str(root / ('lan' if lan else 'local')), 'PYTHONUTF8': '1'}
+            url = f'{"https" if secure else "http"}://127.0.0.1:{port}'
+            with socket.socket() as sock:
+                sock.bind(('127.0.0.1', 0))
+                setup_port = sock.getsockname()[1]
+            env = {**os.environ, 'ESTEIRA_DATA': str(root / mode), 'PYTHONUTF8': '1'}
             # Explicit bundled paths, and no system FFmpeg on PATH, prove the dependency is included.
             env['ESTEIRA_FFMPEG'] = ffmpeg
             env['ESTEIRA_FFPROBE'] = ffprobe
@@ -43,6 +50,8 @@ def main():
             else:
                 command = [sys.executable, '-m', 'backend.run', '--no-browser']
             command += ['--port', str(port)] + (['--lan'] if lan else [])
+            if secure:
+                command += ['--https', '--setup-port', str(setup_port)]
             proc = subprocess.Popen(command, cwd=resource_root(), env=env, stdout=subprocess.PIPE,
                                     stderr=subprocess.STDOUT, text=True, encoding='utf-8', errors='replace',
                                     **({'creationflags': subprocess.CREATE_NEW_PROCESS_GROUP} if os.name == 'nt' else {}))
@@ -67,6 +76,13 @@ def main():
                     if proc.poll() is not None:
                         raise AssertionError('Servidor encerrou: ' + ''.join(lines))
                     try:
+                        if secure:
+                            ca_path = Path(env['ESTEIRA_DATA']) / 'https' / 'ca.crt'
+                            if not ca_path.exists():
+                                time.sleep(.2)
+                                continue
+                            context = ssl.create_default_context(cafile=str(ca_path))
+                            opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), urllib.request.HTTPSHandler(context=context))
                         request('/api/session')
                         break
                     except (OSError, ValueError):
@@ -84,8 +100,17 @@ def main():
                     assert code, 'Código de pareamento não foi exibido.'
                     import http.cookiejar
                     cookies = http.cookiejar.CookieJar()
-                    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), urllib.request.HTTPCookieProcessor(cookies))
+                    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), urllib.request.HTTPCookieProcessor(cookies), *([urllib.request.HTTPSHandler(context=context)] if secure else []))
                     request('/api/pair', {'code': code[1]})
+                    if secure:
+                        assert all(c.secure for c in cookies)
+                        plain = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+                        assert b'Grave seu react' in plain.open(f'http://127.0.0.1:{setup_port}').read()
+                        try:
+                            plain.open(f'http://127.0.0.1:{setup_port}/api/projects')
+                            raise AssertionError('HTTP de configuração expôs API.')
+                        except urllib.error.HTTPError as e:
+                            assert e.code == 404
                 p = request('/api/projects', {'name': 'Teste do instalador'})
                 request('/api/projects/' + p['id'] + '/media', source.read_bytes(), raw=True,
                         headers={'X-Video-Extension': '.mp4'})
@@ -110,7 +135,7 @@ def main():
                     time.sleep(.3)
                 else:
                     raise AssertionError('Exportação não terminou.')
-                output = root / ('lan.mp4' if lan else 'local.mp4')
+                output = root / (mode + '.mp4')
                 output.write_bytes(request('/api/jobs/' + jid + '/file/mp4', raw=True))
                 result = subprocess.run([ffprobe, '-v', 'error', '-show_streams', '-show_format', '-of', 'json', str(output)],
                                         capture_output=True, text=True, check=True)
@@ -151,7 +176,7 @@ def main():
                                    else [sys.executable, '-c', 'from backend.worker import lock_worker; lock=lock_worker()'],
                                    cwd=resource_root(), env=env, capture_output=True, text=True, timeout=15)
             assert check.returncode == 0, check.stdout + check.stderr
-            print('Pacote validado: ' + ('LAN pareada' if lan else 'local') + ', upload, legenda, 1080x1920 com áudio e encerramento.', flush=True)
+            print('Pacote validado: ' + mode + ', upload, legenda, 1080x1920 com áudio e encerramento.', flush=True)
 
 
 if __name__ == '__main__':

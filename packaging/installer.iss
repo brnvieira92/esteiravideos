@@ -1,5 +1,5 @@
 ﻿#ifndef AppVersion
-  #define AppVersion "0.4.0"
+  #define AppVersion "0.4.1"
 #endif
 [Setup]
 AppId={{27B6B310-68B9-4DC1-AF74-7835B270B9CE}
@@ -31,7 +31,7 @@ Source: "..\dist\EsteiraVideos\*"; DestDir: "{app}"; Flags: ignoreversion recurs
 Source: "INSTALL-NOTES.txt"; DestDir: "{app}"
 [Icons]
 Name: "{group}\EsteiraVídeos"; Filename: "{app}\EsteiraVideos.exe"; WorkingDir: "{app}"
-Name: "{group}\EsteiraVídeos — acesso pelo Wi-Fi"; Filename: "{app}\EsteiraVideos.exe"; Parameters: "--lan"; WorkingDir: "{app}"
+Name: "{group}\EsteiraVídeos — acesso pelo Wi-Fi"; Filename: "{app}\EsteiraVideos.exe"; Parameters: "--lan --https --open-browser"; WorkingDir: "{app}"
 Name: "{group}\Desinstalar EsteiraVídeos"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\EsteiraVídeos"; Filename: "{app}\EsteiraVideos.exe"; WorkingDir: "{app}"; Tasks: desktopicon
 [Run]

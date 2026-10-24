@@ -64,7 +64,7 @@ async def pair(request:Request,response:Response):
     body=await request.json()
     if now>pairing_expiry or not hmac.compare_digest(str(body.get('code','')).upper(),pairing): raise HTTPException(403,'Código incorreto ou expirado. Reinicie o servidor para gerar outro.')
     token=secrets.token_urlsafe(32); sessions[token]=now+86400
-    response.set_cookie('esteira_session',token,httponly=True,samesite='strict',max_age=86400)
+    response.set_cookie('esteira_session',token,httponly=True,samesite='strict',max_age=86400,secure=request.url.scheme=='https')
     return {'ok':True}
 
 @app.get('/api/diagnostics')

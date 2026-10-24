@@ -16,3 +16,5 @@ Faça backup dessa pasta com o aplicativo encerrado.
 Componentes de terceiros e licenças estão em _internal\licenses.
 FFmpeg é executado como programa separado, distribuído sob GPL conforme a licença incluída.
 Esta distribuição não é assinada digitalmente. Verifique a origem e o SHA256 da publicação.
+
+Gravacao no celular: abra o atalho acesso pelo Wi-Fi. Acesse no celular o endereco Configurar celular impresso no terminal, instale o certificado conforme as instrucoes e depois use o endereco HTTPS. O PC e o celular devem estar no mesmo Wi-Fi. Nao precisa desinstalar a versao anterior.
