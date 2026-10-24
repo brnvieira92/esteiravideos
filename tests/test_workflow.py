@@ -30,7 +30,8 @@ def setup_project(audio=True):
 
 def test_validation_and_subtitles():
     with pytest.raises(ValueError): validate_cut({'start':2,'end':1},3)
-    with pytest.raises(ValueError): validate_cut({'start':0,'end':2,'game':dict(x=.8,y=0,w=.5,h=1)},3)
+    adjusted=validate_cut({'start':0,'end':2,'game':dict(x=.8,y=0,w=.5,h=1)},3)
+    assert adjusted['game']['x']==.5
     items=parse_srt('1\n00:00:01,250 --> 00:00:03,000\nOlá!\n')
     assert clipped_subtitles(items,2,4)==[dict(start=0,end=1,text='Olá!')]
     assert 'crop=320:180:0:0' in geometry(validate_cut({'start':0,'end':1},2),dict(width=320,height=180))
@@ -144,3 +145,30 @@ def test_invalid_upload_and_project_isolation():
     p1,m,c=setup_project()
     r=client.post('/api/projects/'+p['id']+'/export',json={'ids':[c['id']],'requestId':'different-project-1234'},headers=HEAD)
     assert r.status_code==422  # target has no media; never gains access to another project
+
+
+def test_screenshot_region_adjustment_persists_and_exports():
+    from backend.core import normalize_box
+    raw=dict(x=.06,y=.35,w=.62,h=.87)
+    normalized=normalize_box(raw)
+    assert normalized['y']==pytest.approx(.13)
+    assert normalized['h']==.87
+    assert normalize_box(normalized)==normalized
+    d=validate_cut(dict(start=0,end=1,game=raw,cam=dict(x=.69,y=.51,w=.31,h=.27)),2)
+    assert 'crop=1190:938:114:140' in geometry(d,dict(width=1920,height=1080))
+    for invalid in (dict(x=0,y=0,w=0,h=1),dict(x=-.1,y=0,w=1,h=1),
+                    dict(x=0,y=float('nan'),w=1,h=1),dict(x=0,y=0,w=1,h=1.1)):
+        with pytest.raises(ValueError): normalize_box(invalid)
+    p,m,cut=setup_project()
+    cut.update(game=raw,cam=dict(x=.69,y=.51,w=.31,h=.27),split=.48)
+    saved=post('/projects/'+p['id']+'/cuts',cut)
+    persisted=client.get('/api/projects/'+p['id']).json()['cuts'][0]
+    assert saved['game']==persisted['game']==normalized
+    jid=post('/projects/'+p['id']+'/export',dict(ids=[saved['id']],requestId='adjusted-region-test-1234'))['ids'][0]
+    with db() as conn: j=dict(conn.execute('SELECT * FROM jobs WHERE id=?',(jid,)).fetchone())
+    assert json.loads(j['snapshot'])['game']==normalized
+    run_job(j)
+    with db() as conn:
+        result=dict(conn.execute('SELECT * FROM jobs WHERE id=?',(jid,)).fetchone())
+    assert result['state']=='concluído',result['error']
+    assert probe(result['output'])['height']==1920

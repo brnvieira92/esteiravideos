@@ -45,3 +45,13 @@ Execução [40125974544](https://github.com/brnvieira92/esteiravideos/actions/ru
 - O log da execução tem um aviso de migração do runtime das actions Node.js 20 para Node.js 24. O build e os testes concluíram com sucesso.
 
 Permanece necessária a validação do uso interativo em Windows 10/11 físico, SmartScreen/antivírus, regras do Firewall e acesso por um celular real. O smoke test não abre o navegador nem exercita o assistente gráfico do instalador; ele testa instalação/desinstalação silenciosas e a API do programa instalado.
+
+## Correção 0.2.1 — enquadramento automático
+
+Prévia, API e geometria de exportação agora preservam largura/altura e limitam X/Y ao espaço disponível. Os campos mostram o ajuste imediatamente. O caso relatado (X=0,06, Y=0,35, largura=0,62, altura=0,87) passa a Y=0,13 e pode ser salvo, reaberto e exportado.
+
+- 11 testes Python aprovados, incluindo persistência e exportação real do enquadramento relatado.
+- 3 testes de geometria do frontend aprovados, incluindo idempotência, bordas e rejeição de valores inválidos.
+- TypeScript/build e lint aprovados.
+- Smoke test local e LAN com as coordenadas relatadas, renderização real e legendas aprovado em Linux.
+- O smoke test do pacote Windows também passou a exercitar essas coordenadas; o resultado do novo instalador será registrado após a execução do GitHub Actions.

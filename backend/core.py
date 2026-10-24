@@ -1,4 +1,4 @@
-import json, os, sqlite3, subprocess, uuid, re
+import json, os, sqlite3, subprocess, uuid, re, math
 from pathlib import Path
 from .resources import executable
 
@@ -38,6 +38,16 @@ def probe(path):
     n,den=map(int,v.get('avg_frame_rate','0/1').split('/'))
     return dict(duration=duration,width=v['width'],height=v['height'],fps=n/max(den,1),audio=any(s['codec_type']=='audio' for s in d['streams']),codec=v['codec_name'])
 
+def normalize_box(box):
+    """Preserve region size; shift overflowing X/Y into the original image."""
+    box={k:float(box[k]) for k in ('x','y','w','h')}
+    if not (all(math.isfinite(v) for v in box.values()) and
+            0<=box['x']<=1 and 0<=box['y']<=1 and
+            .01<=box['w']<=1 and .01<=box['h']<=1):
+        raise ValueError('Use posições de 0 a 1 e dimensões de 0,01 a 1.')
+    return {**box,'x':min(box['x'],1-box['w']),'y':min(box['y'],1-box['h'])}
+
+
 def validate_cut(d, duration):
     start=float(d.get('start',0)); end=float(d.get('end',0))
     if not 0<=start<end<=duration: raise ValueError('Use 0 ≤ início < fim ≤ duração da gravação.')
@@ -45,9 +55,7 @@ def validate_cut(d, duration):
     if d.get('layout','gameplay') not in ('gameplay','combined'): raise ValueError('Layout inválido.')
     for key in ('game','cam'):
         box=d.get(key,dict(x=0,y=0,w=1,h=1))
-        box={k:float(box[k]) for k in ('x','y','w','h')}
-        if not (0<=box['x']<1 and 0<=box['y']<1 and .01<=box['w']<=1 and .01<=box['h']<=1 and box['x']+box['w']<=1.00001 and box['y']+box['h']<=1.00001): raise ValueError('Região fora dos limites da imagem.')
-        d[key]=box
+        d[key]=normalize_box(box)
     if len(d.get('subtitles',[]))>5000: raise ValueError('Limite de 5000 blocos de legenda por corte.')
     d['split']=min(.7,max(.2,float(d.get('split',.35))))
     d['fontSize']=min(110,max(20,int(d.get('fontSize',64))))
@@ -80,7 +88,7 @@ def clipped_subtitles(items,start,end):
 
 def geometry(d,meta):
     def crop(key):
-        b=d[key]; w=max(2,int(meta['width']*b['w'])//2*2); h=max(2,int(meta['height']*b['h'])//2*2)
+        b=normalize_box(d[key]); w=max(2,int(meta['width']*b['w'])//2*2); h=max(2,int(meta['height']*b['h'])//2*2)
         x=min(meta['width']-w,int(meta['width']*b['x'])//2*2); y=min(meta['height']-h,int(meta['height']*b['y'])//2*2)
         return f'crop={w}:{h}:{x}:{y}'
     def fit(w,h): return f'scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h},setsar=1'

@@ -88,7 +88,11 @@ def main():
                         headers={'X-Video-Extension': '.mp4'})
                 cut = request('/api/projects/' + p['id'] + '/cuts', {
                     'name': 'Corte português', 'start': .2, 'end': 1.4,
+                    'layout':'combined', 'split':.48,
+                    'game':{'x':.06,'y':.35,'w':.62,'h':.87},
+                    'cam':{'x':.69,'y':.51,'w':.31,'h':.27},
                     'subtitles': [{'start': 0, 'end': 1, 'text': 'Ação e reação!'}]})
+                assert abs(cut['game']['y']-.13)<1e-12 and cut['game']['h']==.87
                 jid = request('/api/projects/' + p['id'] + '/export', {
                     'ids': [cut['id']], 'requestId': 'package-smoke-test-12345'})['ids'][0]
                 deadline = time.time() + 120
