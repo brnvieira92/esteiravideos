@@ -67,3 +67,5 @@ Conferência adicional em Chromium: as coordenadas do caso relatado foram digita
 - 11 testes de backend aprovados.
 - Chromium 1440 px: desenhar webcam, mover sem alterar tamanho, redimensionar, ajustar pelo slider e salvar; coordenadas persistidas conferidas pela API, nenhum erro JavaScript.
 - Chromium com toque emulado 390 × 844: desenhar webcam por eventos de toque, conferir coordenadas e ausência de overflow horizontal. Não substitui teste em celular físico/Safari.
+
+A [execução Windows 40131442044](https://github.com/brnvieira92/esteiravideos/actions/runs/40131442044), commit `8a8325d`, terminou com **Success** em 3m55s: build/TypeScript, lint, 6 testes de geometria, smoke tests do executável e da cópia instalada (local/LAN, exportação real), desinstalação e 11 testes de regressão Python. O artefato contém o instalador **0.3.0**. A interação de arraste/toque foi exercitada em Chromium Linux; o teste Windows do pacote exercita API/renderização, não automação da interface gráfica.
