@@ -19,3 +19,33 @@ export function cropPixels(box: Box, width: number, height: number) {
     x: Math.min(width - w, Math.floor(width * b.x / 2) * 2),
     y: Math.min(height - h, Math.floor(height * b.y / 2) * 2) };
 }
+
+export type Point = {x: number; y: number};
+const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
+
+export function boxFromPoints(a: Point, b: Point): Box {
+  const left = clamp(Math.min(a.x,b.x),0,1);
+  const top = clamp(Math.min(a.y,b.y),0,1);
+  return normalizeBox({x:left,y:top,
+    w:clamp(Math.max(a.x,b.x),0,1)-left < .01 ? .01 : clamp(Math.max(a.x,b.x),0,1)-left,
+    h:clamp(Math.max(a.y,b.y),0,1)-top < .01 ? .01 : clamp(Math.max(a.y,b.y),0,1)-top});
+}
+
+export function moveBox(box: Box, dx: number, dy: number): Box {
+  const b=normalizeBox(box);
+  return {...b,x:clamp(b.x+dx,0,1-b.w),y:clamp(b.y+dy,0,1-b.h)};
+}
+
+export function resizeBox(box: Box, corner: string, point: Point): Box {
+  const b=normalizeBox(box);
+  const right=b.x+b.w, bottom=b.y+b.h;
+  const x=corner.includes('w')?clamp(point.x,0,right-.01):b.x;
+  const y=corner.includes('n')?clamp(point.y,0,bottom-.01):b.y;
+  return normalizeBox({x,y,
+    w:Math.max(.01,(corner.includes('e')?clamp(point.x,b.x+.01,1):right)-x),
+    h:Math.max(.01,(corner.includes('s')?clamp(point.y,b.y+.01,1):bottom)-y)});
+}
+
+export function roundBox(box: Box): Box {
+  return normalizeBox(Object.fromEntries(Object.entries(box).map(([key,value])=>[key,Math.round(value*10000)/10000])) as Box);
+}

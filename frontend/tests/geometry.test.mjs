@@ -26,3 +26,30 @@ test('invalid size and non-finite values are still rejected', () => {
     assert.throws(()=>normalizeBox(box));
   }
 });
+
+const {boxFromPoints,moveBox,resizeBox}=await import('../src/geometry.ts');
+test('draw in either direction and clamp a selection to the original frame',()=>{
+ const a={x:.7,y:.5},b={x:.98,y:.8};
+ assert.deepEqual(boxFromPoints(a,b),boxFromPoints(b,a));
+ const box=boxFromPoints({x:-.2,y:-.1},{x:1.5,y:1.2});
+ assert.deepEqual(box,{x:0,y:0,w:1,h:1});
+ assert.deepEqual(boxFromPoints({x:1,y:1},{x:1,y:1}),{x:.99,y:.99,w:.01,h:.01});
+});
+test('moving a facecam keeps its size and stays inside the recording',()=>{
+ const box={x:.69,y:.51,w:.31,h:.27};
+ const moved=moveBox(box,.5,.9);
+ assert.equal(moved.w,box.w);assert.equal(moved.h,box.h);
+ assert.equal(moved.x,.69);assert.equal(moved.y,.73);
+ assert.deepEqual(moveBox(box,-2,-2),{...box,x:0,y:0});
+});
+test('all four resize corners preserve the opposite corner and a valid minimum size',()=>{
+ const box={x:.2,y:.2,w:.4,h:.4};
+ for(const corner of ['nw','ne','sw','se']){
+  const resized=resizeBox(box,corner,{x:-2,y:2});
+  assert.ok(resized.w>=.01-1e-12&&resized.h>=.01-1e-12);
+  assert.ok(resized.x>=0&&resized.y>=0&&resized.x+resized.w<=1+1e-12&&resized.y+resized.h<=1+1e-12);
+ }
+ const resized=resizeBox(box,'se',{x:.8,y:.9});
+ assert.equal(resized.x,.2);assert.equal(resized.y,.2);
+ assert.ok(Math.abs(resized.w-.6)<1e-12&&Math.abs(resized.h-.7)<1e-12);
+});

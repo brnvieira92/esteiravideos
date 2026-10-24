@@ -57,3 +57,13 @@ Prévia, API e geometria de exportação agora preservam largura/altura e limita
 - O smoke test do executável Windows e da cópia instalada também exercitou essas coordenadas. A [execução 40128973874](https://github.com/brnvieira92/esteiravideos/actions/runs/40128973874), commit `841d3a5`, terminou com **Success** em 3m11s e disponibilizou o instalador 0.2.1 (artefato de aproximadamente 102 MB).
 
 Conferência adicional em Chromium: as coordenadas do caso relatado foram digitadas na interface; o campo Y mudou para 0,13, o salvamento foi confirmado pela API e o mesmo enquadramento reapareceu ao recarregar o projeto. Nenhum erro JavaScript nesse fluxo.
+
+## Versão 0.3.0 — seleção visual e sliders
+
+- Seleção desenhada em qualquer direção sobre o conteúdo real do vídeo; mover e redimensionar pelos quatro cantos.
+- Sliders de horizontal, vertical, largura e altura, campos numéricos e movimento por setas (Shift para 10 pixels).
+- Edição pausa a gravação e preserva sua proporção, evitando mapear barras vazias como parte da imagem. Concluir seleção devolve os controles nativos do player.
+- 6 testes de geometria do frontend aprovados, incluindo desenho, limites, movimento e redimensionamento; build/TypeScript e lint aprovados.
+- 11 testes de backend aprovados.
+- Chromium 1440 px: desenhar webcam, mover sem alterar tamanho, redimensionar, ajustar pelo slider e salvar; coordenadas persistidas conferidas pela API, nenhum erro JavaScript.
+- Chromium com toque emulado 390 × 844: desenhar webcam por eventos de toque, conferir coordenadas e ausência de overflow horizontal. Não substitui teste em celular físico/Safari.
