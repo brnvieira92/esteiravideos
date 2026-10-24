@@ -95,3 +95,13 @@ A [execução Windows 40134282812](https://github.com/brnvieira92/esteiravideos/
 A validação adicional de áudio com início atrasado detectou e corrigiu uma antecipação indevida da voz: agora o mixer mantém o silêncio inicial do arquivo original. O teste decodifica o PCM da exportação e confere silêncio antes do início da voz e áudio depois.
 
 A [execução Windows 40136713237](https://github.com/brnvieira92/esteiravideos/actions/runs/40136713237), commit `3225754`, terminou com **Success** em 3m53s e disponibilizou o instalador **0.4.0** (~102 MB). Passaram build/TypeScript, lint, 8 testes frontend, 25 testes Python e os smoke tests do binário e da cópia instalada, com composição real de base/reação, áudio, legendas, pareamento e exclusão preservando as duas fontes. A gravação pelo navegador foi exercitada em Chromium Linux com dispositivos de teste; o runner Windows não testou câmera física nem Iriun.
+
+## HTTPS local — versão 0.4.1
+
+- 27 testes Python aprovados; 8 testes de frontend, TypeScript/Vite e lint aprovados.
+- Handshake TLS real com validação da cadeia e do IP por CA explícita: aprovado. CA não confiável: rejeitada. Renovação do certificado após alteração do IP preserva a CA.
+- Servidor de configuração HTTP: serve apenas página e certificado DER público; URLs de chaves privadas, traversal e API retornam 404.
+- Smoke do supervisor em Linux passou em três modos: localhost HTTP, LAN HTTP legada e LAN HTTPS com verificação da CA, cookie Secure, pareamento, importação de duas fontes, exportação com voz/legendas, exclusão e encerramento. O mesmo smoke integra o build do executável e da instalação Windows.
+- Chromium em viewport 390×844: contexto seguro, pareamento, upload, reprodução sincronizada, gravação MediaRecorder com câmera/microfone de teste, envio automático, exportação e reprodução 1080×1920; sem erros JavaScript ou overflow. O teste de UI usa a opção de teste Playwright `ignoreHTTPSErrors` por não instalar uma CA no perfil do navegador do ambiente; a cadeia TLS foi validada separadamente sem essa exceção pelo cliente Python e pelo smoke.
+- A reprodução do vídeo base começa no gesto do usuário antes das operações assíncronas de armazenamento, para respeitar restrições de autoplay móvel; o offset é capturado ao iniciar o gravador.
+- Sem Android/iPhone físico neste ambiente: instalação do certificado, permissões, câmera real, comportamento específico do Safari e gravação prolongada precisam ser conferidos nos dispositivos. Não foi instalada confiança automática no Windows ou celular.
