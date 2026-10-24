@@ -79,7 +79,7 @@ def start_setup(host, port, https_port, ca, addresses):
     page = f'''<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>EsteiraVídeos — conectar celular</title><style>body{{font:17px system-ui;background:#11131a;color:#eee;max-width:780px;margin:30px auto;padding:20px;line-height:1.6}}a{{color:#b99aff}}code{{overflow-wrap:anywhere}}</style>
 <h1>Grave seu react pelo celular</h1><p>Computador e celular devem estar no mesmo Wi-Fi. Esta página HTTP serve apenas para instalar o certificado público; vídeos e pareamento usam HTTPS.</p>
-<ol><li>Confira no terminal do computador a impressão SHA-256 abaixo antes de instalar.</li><li><a href="/esteira-ca.cer">Baixar certificado deste computador</a></li><li>Instale e confie no certificado seguindo as instruções abaixo.</li><li>Abra o endereço HTTPS do computador, digite o código de pareamento mostrado no terminal e entre em <b>Editor → Modo react → Gravar agora</b>. Autorize câmera e microfone.</li></ol>
+<ol><li>Baixe o certificado. Antes de confiar, confira nos detalhes do certificado baixado se a impressão SHA-256 é igual à exibida no terminal do computador. Conferir apenas o texto desta página não verifica o arquivo baixado. Se o celular não mostrar a impressão, transfira o certificado público diretamente do PC por cabo ou outro meio confiável.</li><li><a href="/esteira-ca.cer">Baixar certificado deste computador</a></li><li>Instale e confie no certificado seguindo as instruções abaixo.</li><li>Abra o endereço HTTPS do computador, digite o código de pareamento mostrado no terminal e entre em <b>Editor → Modo react → Gravar agora</b>. Autorize câmera e microfone.</li></ol>
 <h2>Android — Chrome</h2><p>Nas Configurações, procure “Instalar certificado” → Certificado CA (normalmente em Segurança → Criptografia e credenciais). Selecione esteira-ca.cer em Downloads. Os nomes variam por fabricante. Feche e reabra o Chrome.</p>
 <h2>iPhone — Safari</h2><p>Após baixar, abra Ajustes → Perfil Baixado (ou Geral → VPN e Gerenciamento de Dispositivo) → Instalar. Depois, em Geral → Sobre → Ajustes de Confiança de Certificado, ative a confiança total para a CA EsteiraVideos deste computador. Reabra o Safari.</p>
 <h2>Computador — Windows</h2><p>Abra o certificado baixado → Instalar Certificado → Usuário Atual → Colocar todos os certificados no repositório a seguir → Autoridades de Certificação Raiz Confiáveis. Reabra o navegador. A instalação é manual e não exige alterar o Path.</p>
@@ -110,7 +110,10 @@ def start_setup(host, port, https_port, ca, addresses):
         def log_message(self, *_):
             pass
 
-    server = ThreadingHTTPServer((host, port), Handler)
+    class SetupServer(ThreadingHTTPServer):
+        allow_reuse_address = False
+
+    server = SetupServer((host, port), Handler)
     server.daemon_threads = True
     Thread(target=server.serve_forever, daemon=True).start()
     return server, fingerprint
