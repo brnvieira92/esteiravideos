@@ -38,26 +38,29 @@ def lock_worker():
 def run_job(j):
     global process
     d=json.loads(j['snapshot']); folder=DATA/j['project_id']; out=folder/f"{j['id']}.mp4"; tmp=folder/f"{j['id']}.partial.mp4"
-    subs=folder/f"{j['id']}.srt"; subs.write_text(srt(d.get('subtitles',[])),encoding='utf-8')
-    ass=folder/f"{j['id']}.ass"; ass.write_text(ass_text(d),encoding='utf-8')
-    proxy=d.get('kind')=='proxy'
-    filt=('[0:v]scale=trunc(iw/2)*2:trunc(ih/2)*2,setsar=1[v]' if proxy else geometry(d,d['meta'])); label='v'
-    if d.get('subtitles'):
-        # Fixed internally generated basename; cwd keeps user paths out of the filter grammar.
-        filt+=f";[v]ass={ass.name}[sub]"; label='sub'
-    filt+=f';[{label}]fps=30,format=yuv420p[final]'
-    cmd=[FFMPEG,'-hide_banner','-nostdin','-y','-protocol_whitelist','file,pipe','-format_whitelist','mov,matroska,webm','-ss',str(d['start']),'-i',d['path']]
-    if d.get('reactionPath'):
-        cmd+=['-protocol_whitelist','file,pipe','-format_whitelist','mov,matroska,webm','-ss',str(max(0,d['start']-d['reactionOffset'])),'-i',d['reactionPath']]
-        audio,has_audio=audio_filter(d)
-        if audio: filt+=';'+audio
-        audio_map=['-map','[aout]'] if has_audio else []
-        audio_extra=[]
-    else:
-        audio_map=['-map','0:a?']; audio_extra=['-af','aresample=async=1:first_pts=0']
-    cmd+=['-t',str(d['end']-d['start']),'-filter_complex',filt,'-map','[final]',*audio_map,'-c:v','libx264','-preset','veryfast','-crf','21','-threads','2','-filter_complex_threads','1','-c:a','aac','-b:a','160k',*audio_extra,'-movflags','+faststart','-progress','pipe:1',str(tmp)]
-
     try:
+        subs=folder/f"{j['id']}.srt"; subs.write_text(srt(d.get('subtitles',[])),encoding='utf-8')
+        ass=folder/f"{j['id']}.ass"; ass.write_text(ass_text(d),encoding='utf-8')
+        # Jobs queued by older releases also need dimensions after autorotation.
+        if d['meta'].get('orientationVersion')!=1: d['meta']=probe(d['path'])
+        if d.get('reactionPath') and d['reactionMeta'].get('orientationVersion')!=1: d['reactionMeta']=probe(d['reactionPath'])
+        proxy=d.get('kind')=='proxy'
+        filt=('[0:v]scale=trunc(iw/2)*2:trunc(ih/2)*2,setsar=1[v]' if proxy else geometry(d,d['meta'])); label='v'
+        if d.get('subtitles'):
+            # Fixed internally generated basename; cwd keeps user paths out of the filter grammar.
+            filt+=f";[v]ass={ass.name}[sub]"; label='sub'
+        filt+=f';[{label}]fps=30,format=yuv420p[final]'
+        cmd=[FFMPEG,'-hide_banner','-nostdin','-y','-protocol_whitelist','file,pipe','-format_whitelist','mov,matroska,webm','-ss',str(d['start']),'-i',d['path']]
+        if d.get('reactionPath'):
+            cmd+=['-protocol_whitelist','file,pipe','-format_whitelist','mov,matroska,webm','-ss',str(max(0,d['start']-d['reactionOffset'])),'-i',d['reactionPath']]
+            audio,has_audio=audio_filter(d)
+            if audio: filt+=';'+audio
+            audio_map=['-map','[aout]'] if has_audio else []
+            audio_extra=[]
+        else:
+            audio_map=['-map','0:a?']; audio_extra=['-af','aresample=async=1:first_pts=0']
+        cmd+=['-t',str(d['end']-d['start']),'-filter_complex',filt,'-map','[final]',*audio_map,'-c:v','libx264','-preset','veryfast','-crf','21','-threads','2','-filter_complex_threads','1','-c:a','aac','-b:a','160k',*audio_extra,'-movflags','+faststart','-progress','pipe:1',str(tmp)]
+
         with open(folder/f"{j['id']}.log",'w',encoding='utf-8') as log:
             process=subprocess.Popen(cmd,cwd=folder,stdout=subprocess.PIPE,stderr=log,text=True,**({'creationflags':subprocess.CREATE_NEW_PROCESS_GROUP} if os.name=='nt' else {'start_new_session':True}))
             lines=queue.Queue()

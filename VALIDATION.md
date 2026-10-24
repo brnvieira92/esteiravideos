@@ -107,3 +107,9 @@ A [execução Windows 40136713237](https://github.com/brnvieira92/esteiravideos/
 - Sem Android/iPhone físico neste ambiente: instalação do certificado, permissões, câmera real, comportamento específico do Safari e gravação prolongada precisam ser conferidos nos dispositivos. Não foi instalada confiança automática no Windows ou celular.
 
 Instalador 0.4.1 aprovado em Windows Server 2022: [execução 40138941938](https://github.com/brnvieira92/esteiravideos/actions/runs/40138941938), commit `edd39c5`. Compilação, smoke do executável, instalação silenciosa em caminho com espaços/acentos, smoke da cópia instalada (HTTP local, LAN legada e HTTPS com verificação de certificado), desinstalação e 27 testes Python concluídos com sucesso. Artefato disponível: `EsteiraVideos-Windows-x64`. Isso não substitui a validação em celular físico.
+
+## Rotação de vídeos de celular — versão 0.4.2
+
+Corrigida a leitura das dimensões após a matriz de rotação usada por Android/iPhone: 90° e 270° trocam largura e altura, como o navegador e o autorotate do FFmpeg. Os metadados antigos são atualizados ao abrir o projeto, criar uma tarefa ou executar tarefas antigas, sem reencodar os originais nem alterar regiões normalizadas.
+
+Testes reais com MP4 e matrizes 0°, 90°, 180° e 270° verificam upload de base/reação, exportação com ambas as fontes, metadados legados, tarefas antigas, resolução 1080×1920 e preservação byte a byte do original. O smoke do instalador também passou a usar reação com matriz de rotação 90°. Linux: 31 testes Python, 8 de frontend, build/lint e smoke HTTP/LAN/HTTPS aprovados.

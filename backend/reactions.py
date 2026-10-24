@@ -1,6 +1,6 @@
 """Trusted snapshot construction and two-source react rendering."""
 import math
-from .core import db
+from .core import db, media_meta
 
 
 def attach_reaction(d,pid):
@@ -12,8 +12,7 @@ def attach_reaction(d,pid):
         return d
     with db() as c: row=c.execute("SELECT * FROM media WHERE id=? AND project_id=? AND role='reaction'",(rid,pid)).fetchone()
     if not row: raise ValueError('Selecione uma reação deste projeto.')
-    import json
-    meta=json.loads(row['meta'])
+    meta=media_meta(row)
     offset=float(d.get('reactionOffset',row['offset']))
     if not math.isfinite(offset): raise ValueError('Sincronização inválida.')
     if d.get('layout')!='combined': raise ValueError('Use Webcam + gameplay para mesclar a reação com o vídeo base.')

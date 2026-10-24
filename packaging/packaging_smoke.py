@@ -29,6 +29,9 @@ def main():
         reaction_source=root/'reaction.mp4'
         subprocess.run([ffmpeg,'-v','error','-f','lavfi','-i','color=red:s=240x320:r=24:d=2',
                         '-f','lavfi','-i','sine=frequency=880:duration=2','-c:v','libx264','-threads','1','-c:a','aac',str(reaction_source)],check=True)
+        rotated_source=root/'reaction-phone.mp4'
+        subprocess.run([ffmpeg,'-v','error','-display_rotation','90','-i',str(reaction_source),'-c','copy','-y',str(rotated_source)],check=True)
+        reaction_source=rotated_source
         for mode in ('local', 'lan', 'https'):
             lan = mode != 'local'
             secure = mode == 'https'
@@ -115,6 +118,7 @@ def main():
                 request('/api/projects/' + p['id'] + '/media', source.read_bytes(), raw=True,
                         headers={'X-Video-Extension': '.mp4'})
                 reaction=json.loads(request('/api/projects/'+p['id']+'/media?role=reaction',reaction_source.read_bytes(),raw=True,headers={'X-Video-Extension':'.mp4'}))
+                assert (reaction['width'],reaction['height'])==(320,240)
                 cut = request('/api/projects/' + p['id'] + '/cuts', {
                     'name': 'Corte português', 'start': .2, 'end': 1.4,
                     'reactionId':reaction['id'],'reactionOffset':0,'baseVolume':.35,'reactionVolume':1,

@@ -40,7 +40,20 @@ def probe(path):
     duration=float(d['format'].get('duration',0))
     if duration<=0: raise ValueError('Duração inválida.')
     n,den=map(int,v.get('avg_frame_rate','0/1').split('/'))
-    return dict(duration=duration,width=v['width'],height=v['height'],fps=n/max(den,1),audio=any(s['codec_type']=='audio' for s in d['streams']),codec=v['codec_name'])
+    # Browsers and FFmpeg autorotate before crop. Encoded dimensions alone are
+    # incorrect for portrait phone recordings stored as landscape + display matrix.
+    rotation=next((s['rotation'] for s in v.get('side_data_list',[]) if 'rotation' in s),v.get('tags',{}).get('rotate',0))
+    rotation=float(rotation)%360
+    width,height=v['width'],v['height']
+    if any(math.isclose(rotation,angle,abs_tol=.1) for angle in (90,270)):
+        width,height=height,width
+    return dict(duration=duration,width=width,height=height,rotation=rotation,orientationVersion=1,fps=n/max(den,1),audio=any(s['codec_type']=='audio' for s in d['streams']),codec=v['codec_name'])
+
+
+def media_meta(row):
+    meta=json.loads(row['meta'])
+    # Upgrade legacy metadata without modifying originals or normalized regions.
+    return meta if meta.get('orientationVersion')==1 else probe(row['path'])
 
 def normalize_box(box):
     """Preserve region size; shift overflowing X/Y into the original image."""

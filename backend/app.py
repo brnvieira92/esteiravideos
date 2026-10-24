@@ -52,7 +52,8 @@ def media_for(pid):
     get('projects',pid)
     with db() as c: m=c.execute("SELECT * FROM media WHERE project_id=? AND role='base'",(pid,)).fetchone()
     if not m: raise ValueError('Importe uma gravação primeiro.')
-    return dict(m)
+    m=dict(m); m['meta']=json.dumps(media_meta(m))
+    return m
 
 @app.get('/api/session')
 def session(request:Request): return {'paired':not LAN or sessions.get(request.cookies.get('esteira_session',''),0)>time.time(),'lan':LAN}
@@ -152,14 +153,19 @@ def project(pid:str):
     p=get('projects',pid)
     with db() as c:
         m=c.execute("SELECT * FROM media WHERE project_id=? AND role='base'",(pid,)).fetchone()
-        p['media']={'id':m['id'],**json.loads(m['meta'])} if m else None
-        p['reactions']=[{'id':r['id'],'offset':r['offset'],**json.loads(r['meta'])} for r in c.execute("SELECT * FROM media WHERE project_id=? AND role='reaction' ORDER BY rowid",(pid,))]
+        rows=c.execute('SELECT * FROM media WHERE project_id=? ORDER BY rowid',(pid,)).fetchall()
+        metadata={}
+        for row in rows:
+            meta=media_meta(row); metadata[row['id']]=meta
+            if meta!=json.loads(row['meta']): c.execute('UPDATE media SET meta=? WHERE id=?',(json.dumps(meta),row['id']))
+        p['media']={'id':m['id'],**metadata[m['id']]} if m else None
+        p['reactions']=[{'id':r['id'],'offset':r['offset'],**metadata[r['id']]} for r in rows if r['role']=='reaction']
         p['cuts']=[{'subtitles':[],'id':r['id'],**json.loads(r['data'])} for r in c.execute('SELECT * FROM cuts WHERE project_id=? ORDER BY rowid',(pid,))]
     return p
 
 @app.post('/api/media/{mid}/proxy')
 def make_proxy(mid:str):
-    m=get('media',mid); meta=json.loads(m['meta'])
+    m=get('media',mid); meta=media_meta(m)
     d=validate_cut(dict(start=0,end=meta['duration'],name='Cópia de visualização'),meta['duration'])
     d.update(kind='proxy',media_id=mid,path=m['path'],meta=meta)
     with db() as c:
