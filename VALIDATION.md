@@ -54,4 +54,6 @@ Prévia, API e geometria de exportação agora preservam largura/altura e limita
 - 3 testes de geometria do frontend aprovados, incluindo idempotência, bordas e rejeição de valores inválidos.
 - TypeScript/build e lint aprovados.
 - Smoke test local e LAN com as coordenadas relatadas, renderização real e legendas aprovado em Linux.
-- O smoke test do pacote Windows também passou a exercitar essas coordenadas; o resultado do novo instalador será registrado após a execução do GitHub Actions.
+- O smoke test do executável Windows e da cópia instalada também exercitou essas coordenadas. A [execução 40128973874](https://github.com/brnvieira92/esteiravideos/actions/runs/40128973874), commit `841d3a5`, terminou com **Success** em 3m11s e disponibilizou o instalador 0.2.1 (artefato de aproximadamente 102 MB).
+
+Conferência adicional em Chromium: as coordenadas do caso relatado foram digitadas na interface; o campo Y mudou para 0,13, o salvamento foi confirmado pela API e o mesmo enquadramento reapareceu ao recarregar o projeto. Nenhum erro JavaScript nesse fluxo.

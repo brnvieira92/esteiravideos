@@ -4,7 +4,7 @@ Editor local de gameplays e lives para Shorts. Interface em português, desktop 
 
 ## Instalação simples no Windows (sem configurar ferramentas)
 
-O instalador já foi gerado e validado na [execução 40125974544](https://github.com/brnvieira92/esteiravideos/actions/runs/40125974544). Baixe o pacote **EsteiraVideos-Windows-x64** na seção **Artifacts** dessa execução.
+O instalador **0.2.1**, com a correção do enquadramento automático, foi gerado e validado na [execução 40128973874](https://github.com/brnvieira92/esteiravideos/actions/runs/40128973874). Baixe o pacote **EsteiraVideos-Windows-x64** na seção **Artifacts** dessa execução.
 
 O fluxo [Instalador Windows](https://github.com/brnvieira92/esteiravideos/actions/workflows/windows-installer.yml) compila o programa em Windows e testa o executável e o instalador antes de disponibilizar o arquivo.
 
