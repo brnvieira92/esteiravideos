@@ -119,3 +119,7 @@ A versão 0.4.2 foi aprovada no Windows na [execução 40141130226](https://gith
 ## Espelhamento da câmera — versão 0.4.3
 
 Checkbox em Gravar agora e Enquadramento controla a prévia ao vivo, o canvas do Short e `hflip` apenas no ramo de webcam do FFmpeg, após o recorte. Preferência booleana validada, salva e herdada nos novos cortes. Gravação original preservada. Testes exportam imagens assimétricas (vermelho de um lado, azul do outro) com e sem espelhamento, usando webcam no original e reação separada, e verificam os pixels decodificados: apenas a metade da webcam troca os lados.
+
+Versão 0.4.3 aprovada no Windows: [execução 40141639888](https://github.com/brnvieira92/esteiravideos/actions/runs/40141639888), commit `c11ee8f`. Executável, instalação em caminho com espaços/acentos, smoke nos modos local/LAN/HTTPS com reação rotacionada e espelhamento, desinstalação e 34 testes Python aprovados. Frontend: 8 testes, build e lint aprovados.
+
+Chromium em 390×844 verificou pixels do canvas antes/depois do checkbox (webcam vermelha à esquerda tornou-se azul, gameplay continuou vermelha), persistência de `camFlip`, checkbox compartilhado em Gravar agora, câmera de teste ao vivo com transformação horizontal, ausência de erros JavaScript e de overflow. Testes de exportação verificaram os pixels do MP4 decodificado em resolução completa, evitando mistura de crominância de uma redução para 2×2. Não houve teste adicional em câmera física de celular.
