@@ -33,7 +33,7 @@ def audio_filter(d):
     for index,meta,key in ((0,d['meta'],'baseVolume'),(1,d['reactionMeta'],'reactionVolume')):
         if meta['audio'] and d[key]>0:
             label=f'a{index}'
-            filters.append(f"[{index}:a:0]asetpts=PTS-STARTPTS,aresample=async=1:first_pts=0,volume={d[key]},apad=whole_dur={d['end']-d['start']}[{label}]")
+            filters.append(f"[{index}:a:0]aresample=async=1:first_pts=0,volume={d[key]},apad=whole_dur={d['end']-d['start']}[{label}]")
             labels.append(f'[{label}]')
     if len(labels)==2:
         filters.append(''.join(labels)+'amix=inputs=2:duration=longest:dropout_transition=0:normalize=0,alimiter=limit=0.95:latency=1[aout]')

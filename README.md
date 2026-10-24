@@ -151,7 +151,7 @@ Faça isso no **Chrome ou Edge do computador**, usando o endereço **localhost o
 2. Em **Modo react → Gravar agora**, clique em **Ativar câmera e microfone** e autorize o navegador. Após a autorização, a lista mostra os nomes dos dispositivos.
 3. Escolha a câmera (por exemplo, Iriun Webcam) e o microfone desejado e ative novamente caso tenha mudado o dispositivo. **Atualizar dispositivos** consulta a lista do navegador. Se estiver ocupado, feche outros programas usando a câmera, mantendo o fornecedor da câmera virtual conectado.
 4. Use **fones de ouvido** para evitar que o áudio do vídeo entre de novo no microfone. A prévia da câmera é muda para não causar realimentação; o microfone é gravado no arquivo.
-5. Posicione o vídeo base no player do editor e clique em **Gravar enquanto assisto**. O monitor do vídeo base começa nessa posição. Durante a gravação não há edição, saltos ou pausas: o tempo entre as duas fontes deve continuar constante.
+5. Posicione o vídeo base no monitor da aba **Gravar agora** e clique em **Gravar enquanto assisto**. O monitor do vídeo base começa nessa posição. Durante a gravação não há edição, saltos ou pausas: o tempo entre as duas fontes deve continuar constante.
 6. Clique em **Parar e salvar reação**. A gravação também termina ao acabar/pausar o base, ao perder o dispositivo ou detectar interrupção de reprodução. O arquivo é enviado ao computador e validado; não feche a aba antes da confirmação.
 7. Confira a sincronização e ajuste o valor em segundos se necessário (latência de dispositivo/driver não é calibrada automaticamente). Configure o enquadramento, salve o corte e exporte.
 

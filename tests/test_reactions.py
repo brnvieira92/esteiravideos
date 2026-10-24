@@ -95,3 +95,21 @@ def test_database_v2_migrates_existing_originals_without_reset(tmp_path,monkeypa
         assert row['id']=='original-id' and row['role']=='base' and row['offset']==0
         assert c.execute('PRAGMA user_version').fetchone()[0]==3
     core.init() # repeatable migration
+
+
+def test_reaction_audio_keeps_its_original_delay(tmp_path):
+    import array
+    path=tmp_path/'delayed-voice.mp4'
+    subprocess.run(['ffmpeg','-v','error','-f','lavfi','-i','color=red:s=240x320:r=30:d=3',
+                    '-itsoffset','0.8','-f','lavfi','-i','sine=frequency=880:duration=2.2',
+                    '-c:v','libx264','-threads','1','-c:a','aac','-y',str(path)],check=True)
+    p,_,cut=setup_project()
+    reaction=upload_reaction(p['id'],path)
+    cut.update(reactionId=reaction['id'],reactionOffset=0,baseVolume=0,reactionVolume=1)
+    saved=post('/projects/'+p['id']+'/cuts',cut)
+    jid=completed_result(p,saved,'delayed-reaction-123456789')
+    raw=subprocess.run(['ffmpeg','-v','error','-i',str(DATA/p['id']/(jid+'.mp4')),
+                        '-vn','-ac','1','-ar','8000','-f','s16le','pipe:1'],capture_output=True,check=True).stdout
+    values=array.array('h');values.frombytes(raw)
+    assert sum(abs(v) for v in values[800:2400])/1600<50
+    assert sum(abs(v) for v in values[6400:8000])/1600>1000

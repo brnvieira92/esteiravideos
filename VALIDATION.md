@@ -85,9 +85,11 @@ A [execução Windows 40134282812](https://github.com/brnvieira92/esteiravideos/
 
 ## Versão 0.4.0 — react com duas fontes e captura
 
-- 24 testes Python aprovados: migração de banco v2→v3 preservando original, isolamento entre projetos, limites de cobertura/offset, snapshot imutável, remux WebM sem duração, renderização de fontes com dimensões distintas e quatro combinações de presença de áudio.
+- 25 testes Python aprovados: migração de banco v2→v3 preservando original, isolamento entre projetos, limites de cobertura/offset, snapshot imutável, remux WebM sem duração, renderização de fontes com dimensões distintas e quatro combinações de presença de áudio.
 - A exportação real foi decodificada para verificar pixel vermelho da fonte de reação na metade superior. Testes de frequência do áudio verificaram aproximadamente 880 Hz para reação isolada e 440 Hz para base isolada ao zerar a outra fonte.
 - 8 testes frontend aprovados, incluindo herança de reação/offset/volumes em novos cortes; build/TypeScript e lint aprovados.
 - Chromium Linux: envio de reação, reprodução sincronizada dos dois players, seleção da webcam sobre a fonte correta, gravação MediaRecorder de câmera e microfone de teste, escrita em OPFS, upload real de WebM, persistência e exportação/reprodução em 1080×1920. Nenhum erro JavaScript. Sem overflow em largura de 390 px.
 - A captura usa as flags de câmera/microfone de teste **somente no navegador de teste**; o aplicativo não inclui fonte simulada. Iriun físico, dispositivos reais, Safari e gravação de longa duração/quota reduzida ainda precisam ser testados na máquina do usuário.
 - O smoke test do executável passou a compor base e reação separados, conferir áudio, excluir o resultado e confirmar que as duas fontes e o corte permanecem. Validado em Linux nos modos local/LAN; o build Windows será confirmado pela execução do Actions.
+
+A validação adicional de áudio com início atrasado detectou e corrigiu uma antecipação indevida da voz: agora o mixer mantém o silêncio inicial do arquivo original. O teste decodifica o PCM da exportação e confere silêncio antes do início da voz e áudio depois.
