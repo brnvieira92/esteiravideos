@@ -4,6 +4,7 @@ from fastapi import FastAPI, UploadFile, HTTPException, Request, Response
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from .core import *
+from .reactions import attach_reaction
 
 sessions={}; attempts={}; pairing=secrets.token_hex(3).upper(); pairing_expiry=time.time()+600
 LAN=os.getenv('ESTEIRA_LAN')=='1'
@@ -49,7 +50,7 @@ def get(table,id):
 
 def media_for(pid):
     get('projects',pid)
-    with db() as c: m=c.execute('SELECT * FROM media WHERE project_id=?',(pid,)).fetchone()
+    with db() as c: m=c.execute("SELECT * FROM media WHERE project_id=? AND role='base'",(pid,)).fetchone()
     if not m: raise ValueError('Importe uma gravação primeiro.')
     return dict(m)
 
@@ -109,36 +110,50 @@ def delete_project(pid:str):
     return {'ok':True}
 
 @app.post('/api/projects/{pid}/media')
-async def upload(pid:str,request:Request):
+async def upload(pid:str,request:Request,role:str='base',offset:float=0):
     get('projects',pid)
+    if role not in ('base','reaction') or not math.isfinite(offset): raise ValueError('Fonte inválida.')
     with db() as c:
-        if c.execute('SELECT 1 FROM media WHERE project_id=?',(pid,)).fetchone(): raise HTTPException(409,'Cada projeto tem uma gravação. Crie outro projeto para importar outra.')
+        if role=='base' and c.execute("SELECT 1 FROM media WHERE project_id=? AND role='base'",(pid,)).fetchone(): raise HTTPException(409,'Cada projeto tem uma gravação. Crie outro projeto para importar outra.')
     suffix=request.headers.get('x-video-extension','').lower()
-    if suffix not in ('.mp4','.mkv','.mov'): raise ValueError('Envie MP4, MKV ou MOV.')
+    if suffix not in ('.mp4','.mkv','.mov','.webm'): raise ValueError('Envie MP4, MKV, MOV ou WebM.')
     if upload_lock.locked(): raise HTTPException(429,'Aguarde o envio atual terminar.')
     await upload_lock.acquire()
     id=uid(); path=DATA/pid/(id+suffix); total=0
+    remux=suffix=='.webm' or request.headers.get('x-recorded')=='1'
+    raw=DATA/pid/(id+'.original'+suffix) if remux else path
     try:
-        with path.open('wb') as f:
+        with raw.open('wb') as f:
             async for chunk in request.stream():
                 total+=len(chunk)
                 if total>MAX_UPLOAD: raise HTTPException(413,'Gravação excede o limite configurado.')
                 f.write(chunk)
+        if remux:
+            def make_seekable():
+                command=[FFMPEG,'-v','error','-nostdin','-y','-protocol_whitelist','file,pipe','-format_whitelist','mov,matroska,webm','-i',str(raw),'-map','0:v:0','-map','0:a?','-c','copy']
+                if suffix=='.mp4': command+=['-movflags','+faststart']
+                r=subprocess.run(command+[str(path)],capture_output=True,timeout=120)
+                if r.returncode: raise ValueError('Não foi possível validar a gravação da câmera. Tente gravar novamente ou importe um arquivo.')
+            await asyncio.to_thread(make_seekable)
         meta=await asyncio.to_thread(probe,path)
         with db() as c:
             c.execute('BEGIN IMMEDIATE')
-            if c.execute('SELECT 1 FROM media WHERE project_id=?',(pid,)).fetchone(): raise HTTPException(409,'Já há uma gravação neste projeto.')
-            c.execute('INSERT INTO media VALUES (?,?,?,?)',(id,pid,str(path),json.dumps(meta)))
-    except Exception: path.unlink(missing_ok=True); raise
+            if role=='base' and c.execute("SELECT 1 FROM media WHERE project_id=? AND role='base'",(pid,)).fetchone(): raise HTTPException(409,'Já há uma gravação neste projeto.')
+            c.execute('INSERT INTO media(id,project_id,path,meta,role,offset) VALUES (?,?,?,?,?,?)',(id,pid,str(path),json.dumps(meta),role,offset))
+    except BaseException:
+        path.unlink(missing_ok=True)
+        if raw!=path: raw.unlink(missing_ok=True)
+        raise
     finally: upload_lock.release()
-    return {'id':id,**meta}
+    return {'id':id,'offset':offset,**meta}
 
 @app.get('/api/projects/{pid}')
 def project(pid:str):
     p=get('projects',pid)
     with db() as c:
-        m=c.execute('SELECT * FROM media WHERE project_id=?',(pid,)).fetchone()
+        m=c.execute("SELECT * FROM media WHERE project_id=? AND role='base'",(pid,)).fetchone()
         p['media']={'id':m['id'],**json.loads(m['meta'])} if m else None
+        p['reactions']=[{'id':r['id'],'offset':r['offset'],**json.loads(r['meta'])} for r in c.execute("SELECT * FROM media WHERE project_id=? AND role='reaction' ORDER BY rowid",(pid,))]
         p['cuts']=[{'subtitles':[],'id':r['id'],**json.loads(r['data'])} for r in c.execute('SELECT * FROM cuts WHERE project_id=? ORDER BY rowid',(pid,))]
     return p
 
@@ -168,7 +183,7 @@ def video(mid:str): return FileResponse(get('media',mid)['path'])
 
 @app.post('/api/projects/{pid}/cuts')
 async def save_cut(pid:str,request:Request):
-    m=media_for(pid); d=validate_cut(await request.json(),json.loads(m['meta'])['duration']); id=d.pop('id',None)
+    m=media_for(pid); d=attach_reaction(validate_cut(await request.json(),json.loads(m['meta'])['duration']),pid); d.pop('reactionPath',None); d.pop('reactionMeta',None); id=d.pop('id',None)
     if id and get('cuts',id)['project_id']!=pid: raise HTTPException(403)
     id=id or uid()
     with db() as c: c.execute('INSERT OR REPLACE INTO cuts VALUES (?,?,?)',(id,pid,json.dumps(d,ensure_ascii=False)))
@@ -200,7 +215,7 @@ async def export(pid:str,request:Request):
         for index,cid in enumerate(dict.fromkeys(ids)):
             cut=get('cuts',cid)
             if cut['project_id']!=pid: raise HTTPException(403)
-            d=validate_cut(json.loads(cut['data']),json.loads(m['meta'])['duration']); d.update(path=m['path'],meta=json.loads(m['meta']))
+            d=attach_reaction(validate_cut(json.loads(cut['data']),json.loads(m['meta'])['duration']),pid); d.update(path=m['path'],meta=json.loads(m['meta']))
             if body.get('preview'): d['end']=min(d['end'],d['start']+5); d['subtitles']=clipped_subtitles(d.get('subtitles',[]),0,d['end']-d['start'])
             jid=hashlib.sha256((pid+key+str(index)).encode()).hexdigest()[:32]
             c.execute('INSERT OR IGNORE INTO jobs(id,project_id,snapshot,title) VALUES (?,?,?,?)',(jid,pid,json.dumps(d),d['name']))

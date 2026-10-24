@@ -25,6 +25,9 @@ def main():
         subprocess.run([ffmpeg, '-v', 'error', '-f', 'lavfi', '-i', 'testsrc2=size=320x180:rate=24:duration=2',
                         '-f', 'lavfi', '-i', 'sine=frequency=440:duration=2', '-c:v', 'libx264', '-threads', '1',
                         '-c:a', 'aac', str(source)], check=True)
+        reaction_source=root/'reaction.mp4'
+        subprocess.run([ffmpeg,'-v','error','-f','lavfi','-i','color=red:s=240x320:r=24:d=2',
+                        '-f','lavfi','-i','sine=frequency=880:duration=2','-c:v','libx264','-threads','1','-c:a','aac',str(reaction_source)],check=True)
         for lan in (False, True):
             with socket.socket() as sock:
                 sock.bind(('127.0.0.1', 0))
@@ -86,8 +89,10 @@ def main():
                 p = request('/api/projects', {'name': 'Teste do instalador'})
                 request('/api/projects/' + p['id'] + '/media', source.read_bytes(), raw=True,
                         headers={'X-Video-Extension': '.mp4'})
+                reaction=json.loads(request('/api/projects/'+p['id']+'/media?role=reaction',reaction_source.read_bytes(),raw=True,headers={'X-Video-Extension':'.mp4'}))
                 cut = request('/api/projects/' + p['id'] + '/cuts', {
                     'name': 'Corte português', 'start': .2, 'end': 1.4,
+                    'reactionId':reaction['id'],'reactionOffset':0,'baseVolume':.35,'reactionVolume':1,
                     'layout':'combined', 'split':.48,
                     'game':{'x':.06,'y':.35,'w':.62,'h':.87},
                     'cam':{'x':.69,'y':.51,'w':.31,'h':.27},
@@ -123,7 +128,7 @@ def main():
                         if e.code!=409 or attempt==29: raise
                         time.sleep(.2)
                 preserved=request('/api/projects/'+p['id'])
-                assert preserved['media'] and len(preserved['cuts'])==1
+                assert preserved['media'] and len(preserved['cuts'])==1 and preserved['reactions'][0]['id']==reaction['id']
                 assert all(j['id']!=jid for j in request('/api/jobs'))
                 try:
                     request('/api/jobs/'+jid+'/file/mp4',raw=True)

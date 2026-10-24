@@ -80,7 +80,7 @@ Use **Ctrl+C no terminal de inicialização**. O supervisor encerra o servidor e
 
 ## Armazenamento e configuração
 
-Dados ficam **fora do código**, por padrão em `%LOCALAPPDATA%\esteira-videos` no Windows e `~/.local/share/esteira-videos` no Linux. Banco `esteira.db` (WAL, versão de esquema 2) e uma pasta de identificador aleatório por projeto. Nela ficam original, resultados, SRT/ASS, logs e miniaturas reais. Cópias compatíveis e prévias são tarefas reais que também ocupam disco. Arquivos não são publicados como uma pasta inteira; a API resolve identificadores internos.
+Dados ficam **fora do código**, por padrão em `%LOCALAPPDATA%\esteira-videos` no Windows e `~/.local/share/esteira-videos` no Linux. Banco `esteira.db` (WAL, versão de esquema 3) e uma pasta de identificador aleatório por projeto. Nela ficam original, resultados, SRT/ASS, logs e miniaturas reais. Cópias compatíveis e prévias são tarefas reais que também ocupam disco. Arquivos não são publicados como uma pasta inteira; a API resolve identificadores internos.
 
 Variáveis opcionais (veja `config.example.ps1`):
 
@@ -126,3 +126,37 @@ Testes automatizados geram vídeos sintéticos temporários, exercitam a API, co
 - A prévia curta renderizada aparece como resultado separado. Metadados de resultados são manuais. Não há publicação no YouTube.
 - Importação não é retomável e o ZIP é preparado em arquivo temporário no disco do sistema antes do download. Reserve espaço para originais, cópias e exportações.
 - O instalador e o programa empacotado passaram por testes automatizados no Windows Server 2022 pelo GitHub Actions. Uso interativo em Windows 10/11 físico, SmartScreen, Firewall e um celular real ainda precisam ser confirmados na máquina de destino.
+
+## Modo react: vídeo base + sua reação (0.4.0)
+
+O projeto continua tendo um vídeo base, mas pode guardar vários vídeos de reação separados. Cada corte escolhe uma reação; arquivos originais são preservados. A saída continua vertical (webcam acima, base abaixo). Não há download de vídeos de terceiros, publicação ou envio a serviços externos.
+
+### Usar uma reação que já está gravada
+
+1. Importe o vídeo base normalmente e abra o editor.
+2. Abra **Modo react → Adicionar reação → Enviar reação** e envie seu MP4, MKV, MOV ou WebM.
+3. A aplicação prepara um novo corte no intervalo em comum. Os cortes já salvos permanecem independentes.
+4. Ajuste **Reação começa no vídeo base em (segundos)**. Fórmula: tempo da reação = tempo do base − esse valor. Se a reação começa quando o base está em 10 s, use 10. Um valor negativo significa que a câmera começou antes do base.
+5. **Reproduzir sincronizado** permite conferir imagem/voz. **Criar corte no intervalo em comum** refaz o intervalo mantendo o enquadramento da mesma reação. O corte precisa estar coberto pela gravação da reação; não é preenchido silenciosamente com imagem congelada.
+6. Em Layout, selecione a webcam no **vídeo da reação** e a gameplay no **vídeo base**. Ajuste proporção e **Áudio do react**: volumes independentes de base e reação/voz, de 0 a 100%.
+7. Salve e exporte. Novos cortes herdam também a reação, sincronização e volumes do corte atual. As tarefas guardam uma cópia das duas fontes/configurações no momento do envio.
+
+Se o codec da reação não tocar no navegador, use **Gerar cópia compatível da reação**, aguarde sua tarefa na Fila e clique em **Usar cópia da reação**. A exportação usa o original.
+
+### Gravar câmera e voz enquanto assiste
+
+Faça isso no **Chrome ou Edge do computador**, usando o endereço **localhost ou 127.0.0.1** aberto pelo aplicativo. Câmera/microfone exigem contexto seguro; o endereço HTTP do computador no Wi-Fi não permite captura em navegadores comuns. No celular pela rede, envie uma reação já gravada e revise os resultados. Não é necessário criar outra rede nem desativar a internet.
+
+1. Se for usar **Iriun Webcam**, abra e conecte o aplicativo/telefone e instale o driver oficial no Windows antes. O EsteiraVídeos não instala nem controla o Iriun: ele usa a câmera virtual que o driver disponibiliza ao navegador. Também pode usar webcam USB ou integrada.
+2. Em **Modo react → Gravar agora**, clique em **Ativar câmera e microfone** e autorize o navegador. Após a autorização, a lista mostra os nomes dos dispositivos.
+3. Escolha a câmera (por exemplo, Iriun Webcam) e o microfone desejado e ative novamente caso tenha mudado o dispositivo. **Atualizar dispositivos** consulta a lista do navegador. Se estiver ocupado, feche outros programas usando a câmera, mantendo o fornecedor da câmera virtual conectado.
+4. Use **fones de ouvido** para evitar que o áudio do vídeo entre de novo no microfone. A prévia da câmera é muda para não causar realimentação; o microfone é gravado no arquivo.
+5. Posicione o vídeo base no player do editor e clique em **Gravar enquanto assisto**. O monitor do vídeo base começa nessa posição. Durante a gravação não há edição, saltos ou pausas: o tempo entre as duas fontes deve continuar constante.
+6. Clique em **Parar e salvar reação**. A gravação também termina ao acabar/pausar o base, ao perder o dispositivo ou detectar interrupção de reprodução. O arquivo é enviado ao computador e validado; não feche a aba antes da confirmação.
+7. Confira a sincronização e ajuste o valor em segundos se necessário (latência de dispositivo/driver não é calibrada automaticamente). Configure o enquadramento, salve o corte e exporte.
+
+A captura usa MediaRecorder e grava chunks em arquivo temporário no disco do navegador (OPFS), quando disponível, com limite de 60 minutos. Sem esse recurso, o fallback em memória é limitado a 128 MB e interrompe ao atingir o limite. Espaço/quota e permissão podem interromper a gravação; falhas são informadas. Se o envio falhar, use **Tentar salvar reação** ou **Baixar cópia da gravação**; após parar e fechar o arquivo, a recuperação da gravação pendente é oferecida ao reabrir o mesmo projeto/origem quando o navegador permite persistência. Fechar/derrubar o navegador **durante** a gravação pode perder o trecho ainda não finalizado.
+
+WebM de navegador é remuxado localmente, sem recodificar os originais, para obter duração e navegação confiáveis. São mantidos tanto o arquivo recebido (`.original.webm` ou `.original.mp4`) quanto a cópia com índice. Reserve espaço para essas cópias, o temporário do navegador e as exportações. Excluir um resultado não apaga a reação original; Excluir projeto remove seus arquivos após confirmação.
+
+O banco migra automaticamente da versão 2 para a **versão 3**, mantendo os projetos antigos como fonte base. Faça backup da pasta de dados com o programa fechado antes de atualizar; versões anteriores não abrem o banco versão 3. Webcam física e Iriun dependem das permissões/driver do seu Windows. A captura foi testada com dispositivos de câmera/microfone fornecidos pelo Chromium para testes; isso não substitui teste do seu hardware.

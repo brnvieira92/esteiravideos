@@ -16,7 +16,7 @@ def db():
 
 def init():
     with db() as c:
-        if c.execute('PRAGMA user_version').fetchone()[0]>2: raise RuntimeError('Banco criado por uma versão mais recente do EsteiraVídeos.')
+        if c.execute('PRAGMA user_version').fetchone()[0]>3: raise RuntimeError('Banco criado por uma versão mais recente do EsteiraVídeos.')
         c.executescript('''CREATE TABLE IF NOT EXISTS projects(id TEXT PRIMARY KEY,name TEXT NOT NULL,created TEXT DEFAULT CURRENT_TIMESTAMP);
 CREATE TABLE IF NOT EXISTS media(id TEXT PRIMARY KEY,project_id TEXT NOT NULL,path TEXT NOT NULL,meta TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS cuts(id TEXT PRIMARY KEY,project_id TEXT NOT NULL,data TEXT NOT NULL);
@@ -24,7 +24,11 @@ CREATE TABLE IF NOT EXISTS jobs(id TEXT PRIMARY KEY,project_id TEXT NOT NULL,sna
 ''')
         columns={r[1] for r in c.execute('PRAGMA table_info(jobs)')}
         if 'running' not in columns: c.execute('ALTER TABLE jobs ADD COLUMN running INTEGER NOT NULL DEFAULT 0')
-        c.execute('PRAGMA user_version=2')
+        media_columns={r[1] for r in c.execute('PRAGMA table_info(media)')}
+        if 'role' not in media_columns: c.execute("ALTER TABLE media ADD COLUMN role TEXT NOT NULL DEFAULT 'base'")
+        if 'offset' not in media_columns: c.execute('ALTER TABLE media ADD COLUMN offset REAL NOT NULL DEFAULT 0')
+        c.execute("CREATE UNIQUE INDEX IF NOT EXISTS one_base_per_project ON media(project_id) WHERE role='base'")
+        c.execute('PRAGMA user_version=3')
 
 def uid(): return uuid.uuid4().hex
 
@@ -89,13 +93,16 @@ def clipped_subtitles(items,start,end):
     return [{**s,'start':max(start,s['start'])-start,'end':min(end,s['end'])-start} for s in items if s['start']<end and s['end']>start]
 
 def geometry(d,meta):
-    def crop(key):
-        b=normalize_box(d[key]); w=max(2,int(meta['width']*b['w'])//2*2); h=max(2,int(meta['height']*b['h'])//2*2)
-        x=min(meta['width']-w,int(meta['width']*b['x'])//2*2); y=min(meta['height']-h,int(meta['height']*b['y'])//2*2)
+    def crop(key,source=None):
+        source=source or meta
+        b=normalize_box(d[key]); w=max(2,int(source['width']*b['w'])//2*2); h=max(2,int(source['height']*b['h'])//2*2)
+        x=min(source['width']-w,int(source['width']*b['x'])//2*2); y=min(source['height']-h,int(source['height']*b['y'])//2*2)
         return f'crop={w}:{h}:{x}:{y}'
     def fit(w,h): return f'scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h},setsar=1'
     if d.get('layout')=='combined':
         top=int(1920*d['split'])//2*2
+        if d.get('reactionPath'):
+            return f"[1:v]setpts=PTS-STARTPTS,{crop('cam',d['reactionMeta'])},{fit(1080,top)},fps=30[cam];[0:v]setpts=PTS-STARTPTS,{crop('game')},{fit(1080,1920-top)},fps=30[game];[cam][game]vstack=inputs=2[v]"
         return f"[0:v]split=2[c][g];[c]{crop('cam')},{fit(1080,top)}[cam];[g]{crop('game')},{fit(1080,1920-top)}[game];[cam][game]vstack=inputs=2[v]"
     return f"[0:v]{crop('game')},{fit(1080,1920)}[v]"
 

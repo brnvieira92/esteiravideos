@@ -1,6 +1,7 @@
 import json, subprocess, time, signal, os, sys, threading, queue
 from pathlib import Path
 from .core import *
+from .reactions import audio_filter
 
 stopping=False
 process=None
@@ -45,7 +46,17 @@ def run_job(j):
         # Fixed internally generated basename; cwd keeps user paths out of the filter grammar.
         filt+=f";[v]ass={ass.name}[sub]"; label='sub'
     filt+=f';[{label}]fps=30,format=yuv420p[final]'
-    cmd=[FFMPEG,'-hide_banner','-nostdin','-y','-protocol_whitelist','file,pipe','-format_whitelist','mov,matroska,webm','-ss',str(d['start']),'-i',d['path'],'-t',str(d['end']-d['start']),'-filter_complex',filt,'-map','[final]','-map','0:a?','-c:v','libx264','-preset','veryfast','-crf','21','-threads','2','-filter_complex_threads','1','-c:a','aac','-b:a','160k','-af','aresample=async=1:first_pts=0','-movflags','+faststart','-progress','pipe:1',str(tmp)]
+    cmd=[FFMPEG,'-hide_banner','-nostdin','-y','-protocol_whitelist','file,pipe','-format_whitelist','mov,matroska,webm','-ss',str(d['start']),'-i',d['path']]
+    if d.get('reactionPath'):
+        cmd+=['-protocol_whitelist','file,pipe','-format_whitelist','mov,matroska,webm','-ss',str(max(0,d['start']-d['reactionOffset'])),'-i',d['reactionPath']]
+        audio,has_audio=audio_filter(d)
+        if audio: filt+=';'+audio
+        audio_map=['-map','[aout]'] if has_audio else []
+        audio_extra=[]
+    else:
+        audio_map=['-map','0:a?']; audio_extra=['-af','aresample=async=1:first_pts=0']
+    cmd+=['-t',str(d['end']-d['start']),'-filter_complex',filt,'-map','[final]',*audio_map,'-c:v','libx264','-preset','veryfast','-crf','21','-threads','2','-filter_complex_threads','1','-c:a','aac','-b:a','160k',*audio_extra,'-movflags','+faststart','-progress','pipe:1',str(tmp)]
+
     try:
         with open(folder/f"{j['id']}.log",'w',encoding='utf-8') as log:
             process=subprocess.Popen(cmd,cwd=folder,stdout=subprocess.PIPE,stderr=log,text=True,**({'creationflags':subprocess.CREATE_NEW_PROCESS_GROUP} if os.name=='nt' else {'start_new_session':True}))
