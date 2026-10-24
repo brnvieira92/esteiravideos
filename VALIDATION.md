@@ -80,3 +80,5 @@ A [execução Windows 40131442044](https://github.com/brnvieira92/esteiravideos/
 - 8 testes frontend aprovados, build/TypeScript e lint aprovados.
 - Chromium: editar enquadramento, salvar, criar e exportar outro corte com o mesmo enquadramento, cancelar uma exclusão e depois confirmá-la durante reprodução. O resultado desapareceu após recarga; original e dois cortes continuaram disponíveis. Conferidos seleção independente, toque mínimo de 44 px e ausência de overflow em 390 px. Nenhum erro JavaScript nesse fluxo.
 - Smoke test local/LAN passou a excluir o resultado após a renderização e confirmar que o projeto, original e corte permanecem disponíveis. O mesmo teste será executado no pacote Windows.
+
+A [execução Windows 40134282812](https://github.com/brnvieira92/esteiravideos/actions/runs/40134282812), commit `081a31e`, concluiu com **Success** em 3m25s. Foram aprovados build/TypeScript, lint, 8 testes frontend, 15 testes Python e os smoke tests do executável e da instalação em modos local/LAN, agora incluindo exclusão real de resultado e preservação de original/corte. O artefato contém o instalador **0.3.1**.
