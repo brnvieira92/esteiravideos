@@ -263,5 +263,6 @@ async def results_zip(request:Request):
         finally: f.close()
     return StreamingResponse(chunks(),media_type='application/zip',headers={'Content-Disposition':'attachment; filename="esteira-videos-resultados.zip"'})
 
-DIST=Path(__file__).resolve().parents[1]/'frontend'/'dist'
+from .resources import resource_root
+DIST=resource_root()/'frontend'/'dist'
 if DIST.exists(): app.mount('/',StaticFiles(directory=DIST,html=True),name='frontend')

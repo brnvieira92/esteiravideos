@@ -1,0 +1,8 @@
+{
+  "release": "autobuild-2026-09-30-13-08",
+  "file": "ffmpeg-n9.0.2-17-g2a571b6068-win64-gpl-9.0.zip",
+  "sha256": "a0e45723c72141975f51d8666302e614711745f3102b704ca3f82c897a58d278",
+  "url": "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-09-30-13-08/ffmpeg-n9.0.2-17-g2a571b6068-win64-gpl-9.0.zip",
+  "build_recipe": "https://github.com/BtbN/FFmpeg-Builds/tree/6c9aec5fc9a72ec3abedd1fa84db141fa18cf52b",
+  "ffmpeg_source": "https://github.com/FFmpeg/FFmpeg/tree/2a571b6068"
+}

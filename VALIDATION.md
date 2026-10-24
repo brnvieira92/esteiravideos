@@ -24,3 +24,11 @@ Há um aviso de depreciação no TestClient do Starlette sobre um alias do AnyIO
 Não validados neste ambiente: PowerShell/Windows, Firewall, taskkill no Windows, rede Wi-Fi física, Safari/iOS, codecs de câmera específicos, vídeos de várias horas, taxa de quadros variável em arquivo real, falha de energia, concorrência de múltiplos celulares e grandes volumes de upload/ZIP. Essas condições exigem validação adicional no computador de destino.
 
 Limitações implementacionais estão no README: transcrição/NVENC não integrados, seleção de regiões por números, timeline sem miniaturas/forma de onda, fonte/cor/alinhamento de legenda fixos e prévia instantânea com diferenças de quebra de texto. O resultado renderizado é a referência final.
+
+## Empacotamento Windows (segunda entrega)
+
+- Testes de regressão e resolução de recursos do bundle: **10 aprovados em Linux**.
+- Teste adicional do supervisor em modo local e LAN: upload real, legenda, H.264/AAC 1080×1920, pareamento e liberação do lock após encerramento, aprovado em Linux.
+- `scripts/build-windows.ps1` e `.github/workflows/windows-installer.yml` executam o build nativo Windows, teste do binário PyInstaller, instalação Inno Setup, teste da cópia instalada e desinstalação. O resultado de cada build deve ser consultado no GitHub Actions; uma configuração de CI, por si só, não comprova aprovação no Windows.
+- Build por usuário, FFmpeg fixado por SHA256, recursos resolvidos por `_MEIPASS`, trabalhador reexecutado com `--worker`, grupos de processos e Job Object no Windows.
+- Sem assinatura Authenticode, sem alteração de Path, Firewall ou remoção da pasta de dados na desinstalação. Não há release pública automática; artefatos de validação ficam no Actions por 30 dias.

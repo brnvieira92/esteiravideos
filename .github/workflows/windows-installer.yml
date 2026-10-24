@@ -1,0 +1,54 @@
+name: Instalador Windows
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'packaging/**'
+      - 'scripts/build-windows.ps1'
+      - 'requirements*.txt'
+      - '.github/workflows/windows-installer.yml'
+permissions:
+  contents: read
+concurrency:
+  group: windows-installer-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  installer:
+    runs-on: windows-2022
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: x64
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Compilar, instalar e testar pacote autossuficiente
+        shell: pwsh
+        run: ./scripts/build-windows.ps1
+      - name: Testes de regressão no Windows
+        shell: pwsh
+        run: |
+          $env:PATH = "${{ github.workspace }}\build\vendor\ffmpeg;" + $env:PATH
+          & .\.build-venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & .\.build-venv\Scripts\python.exe -m pytest -q tests
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Disponibilizar instalador e checksum
+        uses: actions/upload-artifact@v4
+        with:
+          name: EsteiraVideos-Windows-x64
+          path: |
+            dist/installer/EsteiraVideos-Setup.exe
+            dist/installer/SHA256SUMS.txt
+            dist/installer/LEIA-ME.txt
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30

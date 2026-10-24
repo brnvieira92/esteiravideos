@@ -1,10 +1,11 @@
 import json, os, sqlite3, subprocess, uuid, re
 from pathlib import Path
+from .resources import executable
 
 DATA = Path(os.getenv('ESTEIRA_DATA', str(Path(os.getenv('LOCALAPPDATA', Path.home() / '.local/share')) / 'esteira-videos'))).resolve()
 DATA.mkdir(parents=True, exist_ok=True)
-FFMPEG = os.getenv('ESTEIRA_FFMPEG', 'ffmpeg')
-FFPROBE = os.getenv('ESTEIRA_FFPROBE', 'ffprobe')
+FFMPEG = executable('ffmpeg')
+FFPROBE = executable('ffprobe')
 MAX_UPLOAD = int(os.getenv('ESTEIRA_MAX_UPLOAD_GB', '20')) * 1024**3
 
 def db():

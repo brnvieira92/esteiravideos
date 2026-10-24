@@ -1,0 +1,18 @@
+EsteiraVídeos — instalação para Windows 10/11 de 64 bits
+
+Este instalador inclui o interpretador Python, a interface compilada e FFmpeg/FFprobe.
+Não é necessário instalar Git, Node.js ou Python nem editar o Path.
+Não são feitas alterações automáticas no Firewall ou no roteador.
+
+Abra o atalho EsteiraVídeos. O navegador abre automaticamente após o servidor iniciar.
+Mantenha a janela do aplicativo aberta. Use Ctrl+C nela para encerrar.
+Para usar no celular, abra o atalho "EsteiraVídeos — acesso pelo Wi-Fi" e siga o código na janela.
+Use somente uma rede privada confiável. O computador precisa permanecer ligado.
+
+Projetos e vídeos ficam em %LOCALAPPDATA%\esteira-videos, fora da instalação.
+Atualizar ou desinstalar não remove essa pasta. Para apagar vídeos, use Excluir projeto no aplicativo.
+Faça backup dessa pasta com o aplicativo encerrado.
+
+Componentes de terceiros e licenças estão em _internal\licenses.
+FFmpeg é executado como programa separado, distribuído sob GPL conforme a licença incluída.
+Esta distribuição não é assinada digitalmente. Verifique a origem e o SHA256 da publicação.

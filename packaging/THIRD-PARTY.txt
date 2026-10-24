@@ -1,0 +1,20 @@
+EsteiraVídeos uses independent third-party components.
+
+Python: PSF license (see Python-LICENSE.txt).
+FastAPI, Starlette, Uvicorn, Pydantic and transitive dependencies: see python-packages/ and python-packages.json.
+React, Lucide, Vite and frontend dependencies: see javascript/.
+PyInstaller bootloader: GPL with the special exception described in its included license.
+
+FFmpeg/FFprobe are separate unmodified executables, built by BtbN, GPL variant.
+The GPL and upstream notices are preserved in ffmpeg/. Exact download, SHA256,
+FFmpeg source revision and build-recipe revision are in ffmpeg-provenance.json.
+Build scripts and dependency source references:
+https://github.com/BtbN/FFmpeg-Builds/tree/6c9aec5fc9a72ec3abedd1fa84db141fa18cf52b
+FFmpeg source:
+https://github.com/FFmpeg/FFmpeg/tree/2a571b6068
+
+These components retain their respective licenses. No ownership or license change is claimed.
+Before public redistribution of binaries, ensure the corresponding source code for
+FFmpeg and its bundled dependencies is provided in accordance with their licenses.
+The build artifact is for validation/private installation, not an assertion of a
+completed public redistribution license audit.

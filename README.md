@@ -2,7 +2,37 @@
 
 Editor local de gameplays e lives para Shorts. Interface em português, desktop e celular; FastAPI, React/TypeScript, SQLite e FFmpeg. Nenhuma chave de API, telemetria ou envio externo de vídeos. O projeto entrega edição manual real, não usa vídeos demonstrativos na interface.
 
-## Executar no Windows
+## Instalação simples no Windows (sem configurar ferramentas)
+
+O fluxo [Instalador Windows](https://github.com/brnvieira92/esteiravideos/actions/workflows/windows-installer.yml) compila o programa em Windows e testa o executável e o instalador antes de disponibilizar o arquivo.
+
+1. Abra o link acima e selecione a execução mais recente **concluída com sucesso**.
+2. No final da página, em **Artifacts**, baixe **EsteiraVideos-Windows-x64**. É necessário estar conectado ao GitHub para baixar artefatos.
+3. Extraia o ZIP e abra **EsteiraVideos-Setup.exe**.
+4. Siga o instalador. Depois, abra **EsteiraVídeos** no menu Iniciar (ou marque a criação de atalho na Área de Trabalho).
+5. O navegador abre automaticamente. Mantenha a janela do aplicativo aberta; use **Ctrl+C** nela para encerrar.
+
+O pacote inclui Python, FFmpeg/FFprobe e a interface pronta. **Não precisa instalar Python, Git, Node.js ou FFmpeg, nem editar o Path.** O instalador é por usuário e não exige administrador. Windows 10 22H2/11 x64; ARM nativo e Windows 32 bits não são alvos deste pacote.
+
+Para celular, abra o atalho **EsteiraVídeos — acesso pelo Wi-Fi**. O endereço e o código temporário aparecem na janela do aplicativo. O instalador não altera o Firewall; caso necessário, autorize manualmente o aplicativo apenas na rede privada. Não exponha a porta na internet.
+
+Atualizações usam o mesmo diretório. Feche o aplicativo antes de atualizar. Projetos ficam em `%LOCALAPPDATA%\esteira-videos`, fora da instalação; atualizar ou desinstalar **não apaga seus vídeos**. Faça backup com o aplicativo parado.
+
+O pacote não tem assinatura digital. Confira o repositório de origem e o arquivo `SHA256SUMS.txt`; não desative o antivírus. O artefato fica disponível por 30 dias e pode ser gerado novamente pelo botão **Run workflow**, por quem possui permissão no repositório. Se a execução falhar, não haverá instalador aprovado para aquele commit.
+
+### Gerar o instalador (somente desenvolvedores)
+
+No Windows com Python 3.12, Node.js 24 e Inno Setup 6:
+
+```powershell
+.\scripts\build-windows.ps1
+```
+
+Saída: `dist\installer\EsteiraVideos-Setup.exe`. O script cria um ambiente Python local, compila a interface, baixa um FFmpeg de versão fixada (~200 MB) e confere SHA256 antes de usá-lo. Nenhuma dependência é instalada globalmente. Inclui avisos e licenças de terceiros. Consulte `packaging/THIRD-PARTY.txt` para as condições de redistribuição dos componentes; a geração de artefatos de teste não publica uma release pública automaticamente.
+
+O pipeline testa upload, corte com legenda, renderização H.264/AAC 1080×1920, LAN com pareamento e encerramento do trabalhador **com o executável empacotado e sem FFmpeg/Python no PATH**. Em seguida, instala silenciosamente em um caminho com espaços e acentos, repete o teste e desinstala. O modo padrão abre o navegador; os testes usam `--no-browser` para não abrir janelas no runner.
+
+## Instalação pelo código-fonte no Windows (alternativa para desenvolvimento)
 
 Pré-requisitos instalados pelo usuário: **Python 3.12**, **Node.js 22 ou 24**, **FFmpeg e FFprobe** no PATH. Use uma distribuição do FFmpeg indicada em https://ffmpeg.org/download.html com `libx264`, AAC e `ass/subtitles` (libass). Nenhum script instala ferramentas globalmente, altera firewall ou baixa modelos.
 

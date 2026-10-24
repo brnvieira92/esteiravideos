@@ -20,6 +20,7 @@ def stop(*_):
 
 signal.signal(signal.SIGTERM,stop)
 signal.signal(signal.SIGINT,stop)
+if hasattr(signal,'SIGBREAK'): signal.signal(signal.SIGBREAK,stop)
 
 def lock_worker():
     f=open(DATA/'worker.lock','a+b'); f.seek(0); f.write(b'0'); f.flush(); f.seek(0)
