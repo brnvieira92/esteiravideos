@@ -1,6 +1,6 @@
 # Validação — 24/10/2026
 
-Ambiente executado: Linux, Python 3.12.14, Node.js 24.19.0, Chromium local. Não foi executado Windows nem um dispositivo móvel físico.
+A primeira entrega foi validada em Linux, Python 3.12.14, Node.js 24.19.0 e Chromium local. A segunda entrega também passou por build e testes automatizados em Windows Server 2022 no GitHub Actions, conforme registro abaixo. Não foi usado um dispositivo móvel físico.
 
 | Verificação | Resultado |
 |---|---|
@@ -21,7 +21,7 @@ Os testes cobrem: intervalos e limites de coordenadas; recorte de SRT da gravaç
 
 Há um aviso de depreciação no TestClient do Starlette sobre um alias do AnyIO. Não impediu os testes. As capturas de tela usaram barras sintéticas geradas localmente pelo FFmpeg; o aplicativo não inclui gravações fixas nem imagens do mockup.
 
-Não validados neste ambiente: PowerShell/Windows, Firewall, taskkill no Windows, rede Wi-Fi física, Safari/iOS, codecs de câmera específicos, vídeos de várias horas, taxa de quadros variável em arquivo real, falha de energia, concorrência de múltiplos celulares e grandes volumes de upload/ZIP. Essas condições exigem validação adicional no computador de destino.
+Não validados em uma máquina do usuário: Firewall, fechamento manual da janela no Windows, rede Wi-Fi física, Safari/iOS, codecs de câmera específicos, vídeos de várias horas, taxa de quadros variável em arquivo real, falha de energia, concorrência de múltiplos celulares e grandes volumes de upload/ZIP. Essas condições exigem validação adicional no computador de destino.
 
 Limitações implementacionais estão no README: transcrição/NVENC não integrados, seleção de regiões por números, timeline sem miniaturas/forma de onda, fonte/cor/alinhamento de legenda fixos e prévia instantânea com diferenças de quebra de texto. O resultado renderizado é a referência final.
 
@@ -32,3 +32,16 @@ Limitações implementacionais estão no README: transcrição/NVENC não integr
 - `scripts/build-windows.ps1` e `.github/workflows/windows-installer.yml` executam o build nativo Windows, teste do binário PyInstaller, instalação Inno Setup, teste da cópia instalada e desinstalação. O resultado de cada build deve ser consultado no GitHub Actions; uma configuração de CI, por si só, não comprova aprovação no Windows.
 - Build por usuário, FFmpeg fixado por SHA256, recursos resolvidos por `_MEIPASS`, trabalhador reexecutado com `--worker`, grupos de processos e Job Object no Windows.
 - Sem assinatura Authenticode, sem alteração de Path, Firewall ou remoção da pasta de dados na desinstalação. Não há release pública automática; artefatos de validação ficam no Actions por 30 dias.
+
+### Resultado confirmado no Windows
+
+Execução [40125974544](https://github.com/brnvieira92/esteiravideos/actions/runs/40125974544), commit `6139485`, concluída com **Success** em 24/10/2026. Duração total: 4m10s.
+
+- PyInstaller compilou o executável nativo Windows x64 com Python, frontend e FFmpeg/FFprobe incluídos.
+- O binário congelado passou pelo smoke test nos modos local e LAN: upload real, legenda, renderização 1080×1920 com áudio, pareamento e encerramento do trabalhador.
+- Inno Setup produziu o instalador; o pipeline instalou em caminho com espaços/acentos, repetiu o smoke test na instalação e executou o desinstalador.
+- A etapa de regressão Windows passou antes do upload do artefato (o workflow interrompe ao primeiro erro).
+- Artefato `EsteiraVideos-Windows-x64`, aproximadamente 102 MB, inclui `EsteiraVideos-Setup.exe`, `SHA256SUMS.txt` e `LEIA-ME.txt`; retenção de 30 dias.
+- O log da execução tem um aviso de migração do runtime das actions Node.js 20 para Node.js 24. O build e os testes concluíram com sucesso.
+
+Permanece necessária a validação do uso interativo em Windows 10/11 físico, SmartScreen/antivírus, regras do Firewall e acesso por um celular real. O smoke test não abre o navegador nem exercita o assistente gráfico do instalador; ele testa instalação/desinstalação silenciosas e a API do programa instalado.

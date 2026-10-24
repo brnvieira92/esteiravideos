@@ -4,6 +4,8 @@ Editor local de gameplays e lives para Shorts. Interface em português, desktop 
 
 ## Instalação simples no Windows (sem configurar ferramentas)
 
+O instalador já foi gerado e validado na [execução 40125974544](https://github.com/brnvieira92/esteiravideos/actions/runs/40125974544). Baixe o pacote **EsteiraVideos-Windows-x64** na seção **Artifacts** dessa execução.
+
 O fluxo [Instalador Windows](https://github.com/brnvieira92/esteiravideos/actions/workflows/windows-installer.yml) compila o programa em Windows e testa o executável e o instalador antes de disponibilizar o arquivo.
 
 1. Abra o link acima e selecione a execução mais recente **concluída com sucesso**.
@@ -123,4 +125,4 @@ Testes automatizados geram vídeos sintéticos temporários, exercitam a API, co
 - As legendas têm fonte Arial/sans equivalente, cor branca, contorno preto e posição inferior ajustável pela margem. Não há seletor de fonte, cor ou alinhamento nesta versão; não há destaque por palavra.
 - A prévia curta renderizada aparece como resultado separado. Metadados de resultados são manuais. Não há publicação no YouTube.
 - Importação não é retomável e o ZIP é preparado em arquivo temporário no disco do sistema antes do download. Reserve espaço para originais, cópias e exportações.
-- Windows, Firewall e um celular físico não foram executados neste ambiente Linux. A compatibilidade foi implementada, mas precisa ser confirmada na máquina de destino.
+- O instalador e o programa empacotado passaram por testes automatizados no Windows Server 2022 pelo GitHub Actions. Uso interativo em Windows 10/11 físico, SmartScreen, Firewall e um celular real ainda precisam ser confirmados na máquina de destino.
