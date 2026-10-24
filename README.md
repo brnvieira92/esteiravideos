@@ -177,3 +177,11 @@ Os certificados e as chaves ficam em `%LOCALAPPDATA%\esteira-videos\https`. Não
 Executando pelo código-fonte: `.venv\Scripts\python -m backend.run --lan --https --open-browser`. Opcionalmente, `--port 8443 --setup-port 8444`. O atalho normal continua usando HTTP apenas em localhost para o computador. No modo HTTPS, a página inicial também contém instruções para confiar no certificado no Windows. Sessões e gravações temporárias do navegador pertencem a cada endereço: finalize ou baixe gravações pendentes antes de trocar de HTTP para HTTPS.
 
 Limite de validação: HTTPS e gravação foram exercitados em Chromium com dispositivos de teste; não houve teste com câmera física de Android/iPhone. Navegadores antigos, permissões do sistema e bloqueios de dispositivos gerenciados podem impedir a captura.
+
+## Espelhar a câmera na horizontal (0.4.3)
+
+Em **Modo react → Gravar agora**, marque **Espelhar câmera na horizontal**. A prévia ao vivo mostra a câmera espelhada e o corte final aplica a mesma inversão. Também é possível mudar a opção em **Enquadramento → Layout** no modo Webcam + gameplay, inclusive para uma reação enviada ou webcam no vídeo original.
+
+A opção fica salva no corte e é herdada ao criar outro corte. Salve e exporte novamente para gerar um resultado com a nova orientação. Apenas a região da webcam é espelhada; gameplay, legendas e áudio mantêm a orientação/comportamento habitual. O vídeo original da câmera fica preservado, permitindo desfazer a escolha. Durante a gravação, a opção fica bloqueada; ajuste antes de começar.
+
+A versão 0.4.3 inclui a correção de rotação de celular da 0.4.2, validada no [instalador Windows 40141130226](https://github.com/brnvieira92/esteiravideos/actions/runs/40141130226). Vídeos que o telefone salva com rotação de 90°/270° agora usam as dimensões após a rotação para o recorte. Vídeos já importados são reconhecidos ao abrir o projeto; tarefas antigas usam a correção ao clicar em **Fila → Tentar novamente**, sem reenviar o arquivo.

@@ -113,3 +113,9 @@ Instalador 0.4.1 aprovado em Windows Server 2022: [execução 40138941938](https
 Corrigida a leitura das dimensões após a matriz de rotação usada por Android/iPhone: 90° e 270° trocam largura e altura, como o navegador e o autorotate do FFmpeg. Os metadados antigos são atualizados ao abrir o projeto, criar uma tarefa ou executar tarefas antigas, sem reencodar os originais nem alterar regiões normalizadas.
 
 Testes reais com MP4 e matrizes 0°, 90°, 180° e 270° verificam upload de base/reação, exportação com ambas as fontes, metadados legados, tarefas antigas, resolução 1080×1920 e preservação byte a byte do original. O smoke do instalador também passou a usar reação com matriz de rotação 90°. Linux: 31 testes Python, 8 de frontend, build/lint e smoke HTTP/LAN/HTTPS aprovados.
+
+A versão 0.4.2 foi aprovada no Windows na [execução 40141130226](https://github.com/brnvieira92/esteiravideos/actions/runs/40141130226), commit `8f9f151`: executável, instalação, smoke com reação rotacionada e 31 testes Python. Chromium com viewport 390×844 também reconheceu a fonte com rotação 90° como 180×320 e exportou/reproduziu 1080×1920 sem erros JavaScript.
+
+## Espelhamento da câmera — versão 0.4.3
+
+Checkbox em Gravar agora e Enquadramento controla a prévia ao vivo, o canvas do Short e `hflip` apenas no ramo de webcam do FFmpeg, após o recorte. Preferência booleana validada, salva e herdada nos novos cortes. Gravação original preservada. Testes exportam imagens assimétricas (vermelho de um lado, azul do outro) com e sem espelhamento, usando webcam no original e reação separada, e verificam os pixels decodificados: apenas a metade da webcam troca os lados.

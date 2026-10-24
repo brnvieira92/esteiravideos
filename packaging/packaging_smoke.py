@@ -122,7 +122,7 @@ def main():
                 cut = request('/api/projects/' + p['id'] + '/cuts', {
                     'name': 'Corte português', 'start': .2, 'end': 1.4,
                     'reactionId':reaction['id'],'reactionOffset':0,'baseVolume':.35,'reactionVolume':1,
-                    'layout':'combined', 'split':.48,
+                    'layout':'combined', 'split':.48, 'camFlip':True,
                     'game':{'x':.06,'y':.35,'w':.62,'h':.87},
                     'cam':{'x':.69,'y':.51,'w':.31,'h':.27},
                     'subtitles': [{'start': 0, 'end': 1, 'text': 'Ação e reação!'}]})

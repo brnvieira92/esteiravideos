@@ -73,6 +73,8 @@ def validate_cut(d, duration):
     for key in ('game','cam'):
         box=d.get(key,dict(x=0,y=0,w=1,h=1))
         d[key]=normalize_box(box)
+    d.setdefault('camFlip',False)
+    if not isinstance(d['camFlip'],bool): raise ValueError('Espelhamento da câmera deve ser verdadeiro ou falso.')
     d.setdefault('subtitles',[])
     if not isinstance(d['subtitles'],list): raise ValueError('As legendas devem ser uma lista de blocos.')
     if len(d.get('subtitles',[]))>5000: raise ValueError('Limite de 5000 blocos de legenda por corte.')
@@ -112,11 +114,12 @@ def geometry(d,meta):
         x=min(source['width']-w,int(source['width']*b['x'])//2*2); y=min(source['height']-h,int(source['height']*b['y'])//2*2)
         return f'crop={w}:{h}:{x}:{y}'
     def fit(w,h): return f'scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h},setsar=1'
+    mirror=',hflip' if d.get('camFlip',False) else ''
     if d.get('layout')=='combined':
         top=int(1920*d['split'])//2*2
         if d.get('reactionPath'):
-            return f"[1:v]setpts=PTS-STARTPTS,{crop('cam',d['reactionMeta'])},{fit(1080,top)},fps=30[cam];[0:v]setpts=PTS-STARTPTS,{crop('game')},{fit(1080,1920-top)},fps=30[game];[cam][game]vstack=inputs=2[v]"
-        return f"[0:v]split=2[c][g];[c]{crop('cam')},{fit(1080,top)}[cam];[g]{crop('game')},{fit(1080,1920-top)}[game];[cam][game]vstack=inputs=2[v]"
+            return f"[1:v]setpts=PTS-STARTPTS,{crop('cam',d['reactionMeta'])},{fit(1080,top)}{mirror},fps=30[cam];[0:v]setpts=PTS-STARTPTS,{crop('game')},{fit(1080,1920-top)},fps=30[game];[cam][game]vstack=inputs=2[v]"
+        return f"[0:v]split=2[c][g];[c]{crop('cam')},{fit(1080,top)}{mirror}[cam];[g]{crop('game')},{fit(1080,1920-top)}[game];[cam][game]vstack=inputs=2[v]"
     return f"[0:v]{crop('game')},{fit(1080,1920)}[v]"
 
 init()

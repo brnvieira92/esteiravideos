@@ -1,8 +1,8 @@
-﻿param([string]$Version = '0.4.2')
+﻿param([string]$Version = '0.4.3')
 $ErrorActionPreference = 'Stop'
 Set-Location (Join-Path $PSScriptRoot '..')
 if ($env:OS -ne 'Windows_NT') { throw 'O instalador Windows deve ser compilado no Windows (ou GitHub Actions).' }
-if ($Version -notmatch '^\d+\.\d+\.\d+$') { throw 'Versão deve ter formato 0.4.2.' }
+if ($Version -notmatch '^\d+\.\d+\.\d+$') { throw 'Versão deve ter formato 0.4.3.' }
 function Assert-Exit { if ($LASTEXITCODE -ne 0) { throw 'O comando anterior falhou; build interrompido.' } }
 $compiler = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
 if (!(Test-Path $compiler)) { throw 'Inno Setup 6 não encontrado. Instale-o apenas na máquina de build.' }
