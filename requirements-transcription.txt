@@ -1,0 +1,2 @@
+# Opcional. A integração automática ainda não está disponível na interface.
+faster-whisper>=1.2,<2
