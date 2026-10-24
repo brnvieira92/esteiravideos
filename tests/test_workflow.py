@@ -91,6 +91,7 @@ def test_network_pairing():
     try:
         with TestClient(app) as other:
             assert other.get('/api/projects').status_code==401
+            assert other.delete('/api/jobs/unknown',headers=HEAD).status_code==401
             assert other.post('/api/pair',json={'code':'WRONG'},headers=HEAD).status_code==403
             r=other.post('/api/pair',json={'code':module.pairing},headers=HEAD)
             assert r.status_code==200 and 'HttpOnly' in r.headers['set-cookie']
@@ -172,3 +173,85 @@ def test_screenshot_region_adjustment_persists_and_exports():
         result=dict(conn.execute('SELECT * FROM jobs WHERE id=?',(jid,)).fetchone())
     assert result['state']=='concluído',result['error']
     assert probe(result['output'])['height']==1920
+
+
+def completed_result(p,cut,key):
+    jid=post('/projects/'+p['id']+'/export',dict(ids=[cut['id']],requestId=key))['ids'][0]
+    with db() as conn: j=dict(conn.execute('SELECT * FROM jobs WHERE id=?',(jid,)).fetchone())
+    run_job(j)
+    with db() as conn:
+        j=dict(conn.execute('SELECT * FROM jobs WHERE id=?',(jid,)).fetchone())
+    assert j['state']=='concluído',j['error']
+    return jid
+
+
+def test_delete_result_removes_only_generated_files_and_retains_idempotency():
+    p,m,cut=setup_project()
+    key='delete-result-12345678'
+    jid=completed_result(p,cut,key)
+    folder=DATA/p['id']
+    with db() as conn: original=Path(conn.execute('SELECT path FROM media WHERE id=?',(m['id'],)).fetchone()[0])
+    original_bytes=original.read_bytes()
+    assert (folder/(jid+'.mp4')).exists() and (folder/(jid+'.srt')).exists()
+    response=client.delete('/api/jobs/'+jid,headers=HEAD)
+    assert response.status_code==200,response.text
+    assert all(not (folder/(jid+ext)).exists() for ext in ('.mp4','.srt','.ass','.jpg','.log','.partial.mp4'))
+    assert original.read_bytes()==original_bytes
+    project=client.get('/api/projects/'+p['id']).json()
+    assert project['media']['id']==m['id'] and project['cuts'][0]['id']==cut['id']
+    assert all(j['id']!=jid for j in client.get('/api/jobs').json())
+    assert client.get('/api/jobs/'+jid+'/file/mp4').status_code==410
+    assert client.patch('/api/jobs/'+jid,json={'title':'stale review'},headers=HEAD).status_code==410
+    assert client.delete('/api/jobs/'+jid,headers=HEAD).status_code==200
+    assert post('/projects/'+p['id']+'/export',dict(ids=[cut['id']],requestId=key))['ids']==[jid]
+    with db() as conn: assert conn.execute('SELECT state FROM jobs WHERE id=?',(jid,)).fetchone()[0]=='excluído'
+    # A new export remains available, using the saved cut and preserved original.
+    new=post('/projects/'+p['id']+'/export',dict(ids=[cut['id']],requestId='new-after-deletion-12345'))['ids'][0]
+    assert new!=jid
+    post('/jobs/'+new+'/cancel',{})
+
+
+def test_delete_result_rejects_running_and_locked_files(monkeypatch):
+    p,m,cut=setup_project()
+    jid=completed_result(p,cut,'locked-delete-result-1234')
+    mp4=DATA/p['id']/(jid+'.mp4')
+    with db() as conn: conn.execute('UPDATE jobs SET running=1 WHERE id=?',(jid,))
+    assert client.delete('/api/jobs/'+jid,headers=HEAD).status_code==409
+    assert mp4.exists()
+    with db() as conn: conn.execute('UPDATE jobs SET running=0 WHERE id=?',(jid,))
+    original_unlink=Path.unlink
+    def locked(path,*args,**kwargs):
+        if path==mp4: raise PermissionError('Simulated Windows open video handle')
+        return original_unlink(path,*args,**kwargs)
+    with monkeypatch.context() as patch:
+        patch.setattr(Path,'unlink',locked)
+        assert client.delete('/api/jobs/'+jid,headers=HEAD).status_code==409
+        assert mp4.exists() and mp4.with_suffix('.srt').exists()
+    assert client.delete('/api/jobs/'+jid,headers=HEAD).status_code==200
+
+
+def test_delete_result_protects_original_even_with_corrupt_job_metadata():
+    p,m,cut=setup_project()
+    with db() as conn:
+        original=conn.execute('SELECT path FROM media WHERE id=?',(m['id'],)).fetchone()[0]
+        conn.execute("INSERT INTO jobs(id,project_id,snapshot,state,output,title) VALUES (?,?,?,'concluído',?,?)",
+                     (m['id'],p['id'],json.dumps(cut),original,'Must not delete original'))
+    assert client.delete('/api/jobs/'+m['id'],headers=HEAD).status_code==409
+    assert Path(original).exists()
+    proxy=post('/media/'+m['id']+'/proxy',{})['id']
+    with db() as conn: conn.execute("UPDATE jobs SET state='concluído' WHERE id=?",(proxy,))
+    assert client.delete('/api/jobs/'+proxy,headers=HEAD).status_code==409
+    assert client.delete('/api/jobs/not-an-internal-id',headers=HEAD).status_code==404
+
+
+def test_cut_without_subtitles_has_a_complete_editor_payload():
+    p,m,cut=setup_project()
+    cut.pop('subtitles')
+    saved=post('/projects/'+p['id']+'/cuts',cut)
+    assert saved['subtitles']==[]
+    # Old local records created without optional blocks still reopen in the editor.
+    with db() as conn:
+        legacy=dict(saved); legacy.pop('subtitles'); legacy.pop('id')
+        conn.execute('UPDATE cuts SET data=? WHERE id=?',(json.dumps(legacy),saved['id']))
+    reopened=client.get('/api/projects/'+p['id']).json()['cuts'][0]
+    assert reopened['subtitles']==[]

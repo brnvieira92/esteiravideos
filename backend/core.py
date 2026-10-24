@@ -56,6 +56,8 @@ def validate_cut(d, duration):
     for key in ('game','cam'):
         box=d.get(key,dict(x=0,y=0,w=1,h=1))
         d[key]=normalize_box(box)
+    d.setdefault('subtitles',[])
+    if not isinstance(d['subtitles'],list): raise ValueError('As legendas devem ser uma lista de blocos.')
     if len(d.get('subtitles',[]))>5000: raise ValueError('Limite de 5000 blocos de legenda por corte.')
     d['split']=min(.7,max(.2,float(d.get('split',.35))))
     d['fontSize']=min(110,max(20,int(d.get('fontSize',64))))

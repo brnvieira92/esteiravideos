@@ -139,7 +139,7 @@ def project(pid:str):
     with db() as c:
         m=c.execute('SELECT * FROM media WHERE project_id=?',(pid,)).fetchone()
         p['media']={'id':m['id'],**json.loads(m['meta'])} if m else None
-        p['cuts']=[{'id':r['id'],**json.loads(r['data'])} for r in c.execute('SELECT * FROM cuts WHERE project_id=? ORDER BY rowid',(pid,))]
+        p['cuts']=[{'subtitles':[],'id':r['id'],**json.loads(r['data'])} for r in c.execute('SELECT * FROM cuts WHERE project_id=? ORDER BY rowid',(pid,))]
     return p
 
 @app.post('/api/media/{mid}/proxy')
@@ -209,7 +209,7 @@ async def export(pid:str,request:Request):
 
 @app.get('/api/jobs')
 def jobs():
-    with db() as c: return [{k:r[k] for k in ('id','project_id','state','progress','error','reviewed','title','description','created')} | {'kind':json.loads(r['snapshot']).get('kind','export')} for r in c.execute('SELECT * FROM jobs ORDER BY created DESC,rowid DESC')]
+    with db() as c: return [{k:r[k] for k in ('id','project_id','state','progress','error','reviewed','title','description','created')} | {'kind':json.loads(r['snapshot']).get('kind','export')} for r in c.execute("SELECT * FROM jobs WHERE state!='excluído' ORDER BY created DESC,rowid DESC")]
 
 @app.post('/api/jobs/{jid}/{action}')
 def job_action(jid:str,action:str):
@@ -221,15 +221,48 @@ def job_action(jid:str,action:str):
         else: raise HTTPException(409,'Ação indisponível neste estado.')
     return {'ok':True}
 
+@app.delete('/api/jobs/{jid}')
+def delete_result(jid:str):
+    # Only internally named generated files are removable; never follow output paths from the client.
+    with db() as c:
+        c.execute('BEGIN IMMEDIATE')
+        row=c.execute('SELECT * FROM jobs WHERE id=?',(jid,)).fetchone()
+        if not row: raise HTTPException(404,'Resultado não encontrado.')
+        j=dict(row)
+        if j['state']=='excluído': return {'ok':True}
+        if j['state']!='concluído' or j['running']:
+            raise HTTPException(409,'Aguarde a conclusão do processamento antes de excluir o resultado.')
+        if json.loads(j['snapshot']).get('kind')=='proxy':
+            raise HTTPException(409,'A cópia de visualização não é um resultado exportado.')
+        if not all(re.fullmatch(r'[0-9a-f]{32}',v) for v in (jid,j['project_id'])):
+            raise HTTPException(409,'Identificador de arquivo inválido.')
+        folder=(DATA/j['project_id']).resolve()
+        if folder.parent!=DATA.resolve(): raise HTTPException(409,'Local de arquivo inválido.')
+        paths=[folder/(jid+ext) for ext in ('.mp4','.srt','.ass','.jpg','.log','.partial.mp4')]
+        originals={Path(r['path']).resolve() for r in c.execute('SELECT path FROM media')}
+        if any(path.resolve().parent!=folder or path.resolve() in originals for path in paths):
+            raise HTTPException(409,'Não é permitido excluir a gravação original ou arquivos externos.')
+        try:
+            # MP4 first: Windows refuses unlink while another player/download holds it open.
+            for path in paths: path.unlink(missing_ok=True)
+        except OSError:
+            raise HTTPException(409,'Não foi possível remover todos os arquivos. Feche a reprodução ou download em outros aparelhos e tente excluir novamente.')
+        # Retain the request ID as a tombstone so a retransmitted export never recreates a deleted task.
+        c.execute("UPDATE jobs SET state='excluído',output=NULL,error=NULL WHERE id=?",(jid,))
+    return {'ok':True}
+
 @app.patch('/api/jobs/{jid}')
 async def edit_result(jid:str,request:Request):
     get('jobs',jid); d=await request.json()
-    with db() as c: c.execute('UPDATE jobs SET title=?,description=?,reviewed=? WHERE id=?',(str(d.get('title',''))[:150],str(d.get('description',''))[:5000],bool(d.get('reviewed')),jid))
+    with db() as c:
+        updated=c.execute("UPDATE jobs SET title=?,description=?,reviewed=? WHERE id=? AND state='concluído'",(str(d.get('title',''))[:150],str(d.get('description',''))[:5000],bool(d.get('reviewed')),jid))
+        if not updated.rowcount: raise HTTPException(410,'Este resultado foi excluído ou não está disponível para revisão.')
     return {'ok':True}
 
 @app.get('/api/jobs/{jid}/file/{kind}')
 def result_file(jid:str,kind:str,download:bool=False):
     j=get('jobs',jid)
+    if j['state']=='excluído': raise HTTPException(410,'Este resultado foi excluído.')
     if kind=='thumbnail' and j['state']=='concluído':
         path=DATA/j['project_id']/(jid+'.jpg')
         if not path.exists(): raise HTTPException(404)

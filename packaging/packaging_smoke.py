@@ -115,6 +115,21 @@ def main():
                 assert any(s['codec_type'] == 'audio' for s in meta['streams'])
                 assert abs(float(meta['format']['duration']) - 1.2) < .2
                 assert request('/api/diagnostics')['libass']
+                for attempt in range(30):
+                    try:
+                        request('/api/jobs/'+jid,method='DELETE')
+                        break
+                    except urllib.error.HTTPError as e:
+                        if e.code!=409 or attempt==29: raise
+                        time.sleep(.2)
+                preserved=request('/api/projects/'+p['id'])
+                assert preserved['media'] and len(preserved['cuts'])==1
+                assert all(j['id']!=jid for j in request('/api/jobs'))
+                try:
+                    request('/api/jobs/'+jid+'/file/mp4',raw=True)
+                    raise AssertionError('Vídeo excluído permaneceu disponível.')
+                except urllib.error.HTTPError as e:
+                    assert e.code==410
             finally:
                 if proc.poll() is None:
                     proc.send_signal(signal.CTRL_BREAK_EVENT if os.name == 'nt' else signal.SIGTERM)

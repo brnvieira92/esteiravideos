@@ -69,3 +69,14 @@ Conferência adicional em Chromium: as coordenadas do caso relatado foram digita
 - Chromium com toque emulado 390 × 844: desenhar webcam por eventos de toque, conferir coordenadas e ausência de overflow horizontal. Não substitui teste em celular físico/Safari.
 
 A [execução Windows 40131442044](https://github.com/brnvieira92/esteiravideos/actions/runs/40131442044), commit `8a8325d`, terminou com **Success** em 3m55s: build/TypeScript, lint, 6 testes de geometria, smoke tests do executável e da cópia instalada (local/LAN, exportação real), desinstalação e 11 testes de regressão Python. O artefato contém o instalador **0.3.0**. A interação de arraste/toque foi exercitada em Chromium Linux; o teste Windows do pacote exercita API/renderização, não automação da interface gráfica.
+
+## Versão 0.3.1 — excluir resultados e preservar enquadramento
+
+- Resultados têm Excluir vídeo com confirmação; o player é fechado antes da solicitação para liberar o arquivo no Windows.
+- A API remove somente arquivos gerados de um resultado concluído, bloqueia tarefas ainda ativas e cópias de visualização, protege originais e caminhos externos e responde 410 para arquivos já excluídos.
+- Identificadores das tarefas excluídas são retidos sem o arquivo de vídeo, impedindo que retransmissões da mesma requisição recriem a exportação. Os registros não aparecem na fila nem em Resultados.
+- Novos cortes copiam layout, webcam/gameplay, split e estilo do corte atual; os objetos são independentes e os blocos de legenda, nome e ID não são copiados. A seleção de resultados também foi separada da seleção de cortes.
+- 15 testes Python aprovados, incluindo exportação real seguida de exclusão, preservação byte a byte do original, proteção contra exclusão de original, idempotência, arquivos em uso simulados e reabertura de cortes antigos sem blocos opcionais.
+- 8 testes frontend aprovados, build/TypeScript e lint aprovados.
+- Chromium: editar enquadramento, salvar, criar e exportar outro corte com o mesmo enquadramento, cancelar uma exclusão e depois confirmá-la durante reprodução. O resultado desapareceu após recarga; original e dois cortes continuaram disponíveis. Conferidos seleção independente, toque mínimo de 44 px e ausência de overflow em 390 px. Nenhum erro JavaScript nesse fluxo.
+- Smoke test local/LAN passou a excluir o resultado após a renderização e confirmar que o projeto, original e corte permanecem disponíveis. O mesmo teste será executado no pacote Windows.
