@@ -1,5 +1,6 @@
 """Real packaged-binary smoke test, also callable on Linux for supervisor validation."""
 import json
+import http.client
 import os
 from pathlib import Path
 import re
@@ -58,6 +59,7 @@ def main():
             proc = subprocess.Popen(command, cwd=resource_root(), env=env, stdout=subprocess.PIPE,
                                     stderr=subprocess.STDOUT, text=True, encoding='utf-8', errors='replace',
                                     **({'creationflags': subprocess.CREATE_NEW_PROCESS_GROUP} if os.name == 'nt' else {}))
+            keepalive=None
             lines = []
             def read():
                 for line in proc.stdout:
@@ -104,7 +106,7 @@ def main():
                     import http.cookiejar
                     cookies = http.cookiejar.CookieJar()
                     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), urllib.request.HTTPCookieProcessor(cookies), *([urllib.request.HTTPSHandler(context=context)] if secure else []))
-                    request('/api/pair', {'code': code[1]})
+                    request('/api/pair', {'code': code[1], 'remember':secure, 'deviceName':'Celular do smoke'})
                     if secure:
                         assert all(c.secure for c in cookies)
                         plain = urllib.request.build_opener(urllib.request.ProxyHandler({}))
@@ -172,6 +174,10 @@ def main():
                     raise AssertionError('Vídeo excluído permaneceu disponível.')
                 except urllib.error.HTTPError as e:
                     assert e.code==410
+                if secure:
+                    keepalive=http.client.HTTPSConnection('127.0.0.1',port,context=context,timeout=5)
+                    keepalive.request('GET','/api/session')
+                    keepalive.getresponse().read()
             finally:
                 if proc.poll() is None:
                     proc.send_signal(signal.CTRL_BREAK_EVENT if os.name == 'nt' else signal.SIGTERM)
@@ -182,6 +188,42 @@ def main():
                         proc.wait()
                         raise AssertionError('Supervisor não encerrou corretamente.')
                 assert proc.returncode == 0, ''.join(lines)
+            if keepalive: keepalive.close()
+            if secure:
+                # Same data folder, TLS CA and cookie jar; no new pairing code is sent.
+                proc = subprocess.Popen(command, cwd=resource_root(), env=env, stdout=subprocess.PIPE,
+                                        stderr=subprocess.STDOUT, text=True, encoding='utf-8', errors='replace',
+                                        **({'creationflags': subprocess.CREATE_NEW_PROCESS_GROUP} if os.name == 'nt' else {}))
+                lines=[]
+                threading.Thread(target=read,daemon=True).start()
+                try:
+                    deadline=time.time()+60
+                    while time.time()<deadline:
+                        if proc.poll() is not None: raise AssertionError('Reinício falhou: '+''.join(lines))
+                        try:
+                            info=request('/api/session')
+                            if info['paired'] and info['trusted']: break
+                        except (OSError,ValueError): pass
+                        time.sleep(.2)
+                    else: raise AssertionError('Dispositivo não permaneceu pareado após reiniciar.')
+                    assert request('/api/projects/'+p['id'])['id']==p['id']
+                    trusted=request('/api/devices')
+                    assert len(trusted)==1 and trusted[0]['name']=='Celular do smoke'
+                    request('/api/devices/'+trusted[0]['id'],method='DELETE')
+                    assert not request('/api/session')['paired']
+                    try:
+                        request('/api/projects')
+                        raise AssertionError('Dispositivo revogado continuou autorizado.')
+                    except urllib.error.HTTPError as e: assert e.code==401
+                finally:
+                    if proc.poll() is None:
+                        proc.send_signal(signal.CTRL_BREAK_EVENT if os.name == 'nt' else signal.SIGTERM)
+                        try: proc.wait(timeout=20)
+                        except subprocess.TimeoutExpired:
+                            proc.kill();proc.wait()
+                            raise AssertionError('Supervisor não encerrou após teste de confiança.')
+                    assert proc.returncode==0,''.join(lines)
+                print('Confiança HTTPS persistiu no reinício e foi revogada com sucesso.',flush=True)
             # The kernel lock must be available after shutdown: no orphan worker remains.
             os.environ['ESTEIRA_DATA'] = env['ESTEIRA_DATA']
             check = subprocess.run([sys.executable, '--check-worker-lock'] if getattr(sys, 'frozen', False)

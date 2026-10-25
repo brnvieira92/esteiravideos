@@ -72,6 +72,8 @@ def main():
     with socket.socket() as sock:
         if os.name == 'nt':
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        else:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
             sock.bind((host, args.port))
         except OSError:

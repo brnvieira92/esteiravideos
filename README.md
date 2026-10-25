@@ -68,7 +68,7 @@ Se o player não conseguir reproduzir um codec, use **Gerar cópia compatível**
 
 O servidor imprime o endereço IPv4 e um código de pareamento válido por 10 minutos. Abra o endereço no celular e digite o código na tela (não em uma URL). Se a descoberta mostrar um adaptador incorreto, consulte `ipconfig` e use o IPv4 do Wi-Fi. Se necessário, autorize manualmente Python no Firewall do Windows **somente para redes privadas**. Não abra portas no roteador nem use túnel público.
 
-O modo LAN exige pareamento também no navegador do PC. O cookie é HttpOnly/SameSite Strict, dura até 24 horas e as sessões são invalidadas no reinício. Há limite de 5 tentativas por minuto por IP, validação de origem e cabeçalho obrigatório contra CSRF nas alterações. O modo legado `--lan` sem `--https` usa HTTP e não permite gravar câmera pelo celular. O atalho Wi-Fi usa HTTPS na versão 0.4.1; consulte a configuração abaixo. Reinicie para gerar outro código após expiração. O terminal exibe o código; logs de acesso HTTP ficam desativados.
+O modo LAN exige pareamento também no navegador do PC. O cookie é HttpOnly/SameSite Strict, dura até 24 horas e as sessões temporárias são invalidadas no reinício. A versão 0.4.6 permite confiar em navegadores por 90 dias via HTTPS (veja abaixo). Há limite de 5 tentativas por minuto por IP, validação de origem e cabeçalho obrigatório contra CSRF nas alterações. O modo legado `--lan` sem `--https` usa HTTP e não permite gravar câmera pelo celular. O atalho Wi-Fi usa HTTPS na versão 0.4.1; consulte a configuração abaixo. Reinicie para gerar outro código após expiração. O terminal exibe o código; logs de acesso HTTP ficam desativados.
 
 O computador deve permanecer ligado. Ao perder conexão, a interface informa o problema e consulta novamente a fila quando reconecta. Exportações usam um identificador por requisição para impedir duplicação no backend; a interface não reenvia exportações automaticamente.
 
@@ -205,3 +205,18 @@ Os novos cortes recebem nomes como **Nome do projeto — parte 1**, **parte 2**,
 Antes de adicionar uma exportação à fila, o servidor compara o conteúdo solicitado com o histórico do projeto. Cortes com o mesmo trecho, enquadramento, reação, áudio e legendas não são gerados outra vez se já estiverem na fila, em processamento ou concluídos. Só renomear o corte não gera outro vídeo. A comparação também reconhece cópias de cortes com conteúdo igual e resultados de versões anteriores. A interface informa quantos cortes foram adicionados e quantos não foram repetidos.
 
 Excluir um vídeo em Resultados mantém o histórico: selecionar todos os cortes depois disso não recria automaticamente os vídeos apagados. Para refazer um resultado, marque **Gerar novamente cortes já exportados**, junto à lista de cortes, e exporte. Essa opção volta a ficar desmarcada após o pedido e ainda evita duplicar tarefas que estejam na fila/processando. Alterar o trecho ou outra configuração que afete o vídeo permite uma nova exportação normalmente. Tarefas que falharam ou foram canceladas podem ser tentadas novamente. Prévias e exportações completas são verificadas separadamente.
+
+## Lembrar o pareamento do celular (0.4.6)
+
+Na tela de pareamento HTTPS, marque **Confiar neste dispositivo por 90 dias**, dê um nome opcional (por exemplo, Meu celular) e informe o código do terminal. Nas próximas aberturas, o navegador será reconhecido mesmo após reiniciar ou atualizar o aplicativo. A validade é fixa, de até 90 dias após a autorização; depois é necessário parear novamente. Sem marcar a opção, o acesso continua temporário e termina ao reiniciar o servidor ou após 24 horas. A confiança só pode ser criada e utilizada por HTTPS.
+
+No botão **Dispositivos conectados**, no cabeçalho:
+
+- No celular, **Esquecer este dispositivo e sair** revoga sua própria autorização.
+- No computador, abra o aplicativo em `localhost` ou `127.0.0.1` para consultar nomes, data de autorização, último uso registrado e validade. Use **Revogar** ou **Esquecer todos os dispositivos confiáveis** para retirar acessos. No modo Wi-Fi, esse navegador também precisa estar pareado; o atalho normal local permite gerenciar diretamente no PC. A gestão é permitida somente a conexões de loopback com hostname local, não a clientes remotos nem por cabeçalhos de IP encaminhado.
+
+A confiança pertence a **este navegador e endereço do computador**. Use o mesmo navegador e endereço HTTPS nas próximas vezes. Limpar cookies, usar janela anônima, mudar de navegador ou acessar por outro IP/endereço exige novo pareamento. Se o IP mudar, a autorização antiga poderá ser removida no computador. Somente aparelhos seus devem ser lembrados. O computador e o aplicativo precisam continuar ligados para acessar os vídeos.
+
+O navegador guarda um token aleatório de 256 bits em cookie `__Host-`, Secure, HttpOnly e SameSite Strict. O banco salva apenas seu hash SHA-256, com validade e identificação para revogação; código de pareamento e token puro não são persistidos no banco. A revogação bloqueia as próximas requisições, inclusive após reiniciar. Não usa identificação por IP, impressão digital de hardware ou reconhecimento de navegador para autenticar. Os registros ficam na pasta de dados preservada nas atualizações.
+
+Se o acesso expirar ou for revogado, a interface volta ao pareamento. Durante uma gravação em andamento, ela informa a perda do acesso para permitir finalizar e baixar a cópia antes de recarregar. O último uso mostrado na lista pode ser atualizado com intervalo de até uma hora.

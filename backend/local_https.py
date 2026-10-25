@@ -4,6 +4,7 @@ import ipaddress
 import json
 import os
 import ssl
+import socket
 from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -111,7 +112,14 @@ def start_setup(host, port, https_port, ca, addresses):
             pass
 
     class SetupServer(ThreadingHTTPServer):
-        allow_reuse_address = False
+        # POSIX SO_REUSEADDR permits restart after closed connections, but doesn't
+        # share an active listener. Windows needs exclusive binding instead.
+        allow_reuse_address = os.name != 'nt'
+
+        def server_bind(self):
+            if os.name == 'nt':
+                self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+            super().server_bind()
 
     server = SetupServer((host, port), Handler)
     server.daemon_threads = True

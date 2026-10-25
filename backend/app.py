@@ -5,6 +5,7 @@ from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from .core import *
 from .reactions import attach_reaction
+from . import trusted_devices as trust
 from .export_policy import next_cut_number, cut_name, fingerprint, available_jobs
 
 sessions={}; attempts={}; pairing=secrets.token_hex(3).upper(); pairing_expiry=time.time()+600
@@ -32,9 +33,11 @@ async def security(request,call_next):
         if request.url.path.startswith('/api/') and request.headers.get('x-esteira')!='1': return JSONResponse({'detail':'Cabeçalho de proteção ausente.'},403)
     # Loopback mode refuses hostile DNS rebinding hostnames.
     if not LAN and host.split(':')[0] not in ('localhost','127.0.0.1','[','testserver'): return JSONResponse({'detail':'Host não permitido.'},403)
+    request.state.trusted=trust.current(request) if LAN or request.url.path=='/api/session' else None
     if LAN and request.url.path.startswith('/api/') and request.url.path not in ('/api/pair','/api/session'):
-        if sessions.get(request.cookies.get('esteira_session',''),0)<time.time(): return JSONResponse({'detail':'Pareamento necessário.'},401)
+        if not request.state.trusted and sessions.get(request.cookies.get('esteira_session',''),0)<time.time(): return JSONResponse({'detail':'Pareamento necessário.'},401)
     response=await call_next(request)
+    if request.url.path in ('/api/session','/api/pair','/api/unpair') or request.url.path.startswith('/api/devices'): response.headers['Cache-Control']='no-store'
     response.headers['X-Content-Type-Options']='nosniff'
     response.headers['Referrer-Policy']='no-referrer'
     response.headers['Content-Security-Policy']="default-src 'self'; style-src 'self' 'unsafe-inline'; media-src 'self' blob:; img-src 'self' blob: data:; script-src 'self'; connect-src 'self'"
@@ -57,7 +60,11 @@ def media_for(pid):
     return m
 
 @app.get('/api/session')
-def session(request:Request): return {'paired':not LAN or sessions.get(request.cookies.get('esteira_session',''),0)>time.time(),'lan':LAN}
+def session(request:Request):
+    trusted=request.state.trusted
+    return {'paired':not LAN or bool(trusted) or sessions.get(request.cookies.get('esteira_session',''),0)>time.time(),'lan':LAN,
+            'trusted':bool(trusted),'deviceName':trusted['name'] if trusted else None,'expiresAt':trusted['expires'] if trusted else None,
+            'canManageDevices':trust.local_admin(request),'https':request.url.scheme=='https'}
 
 @app.post('/api/pair')
 async def pair(request:Request,response:Response):
@@ -65,8 +72,42 @@ async def pair(request:Request,response:Response):
     if len(tries)>=5: raise HTTPException(429,'Aguarde um minuto antes de tentar novamente.')
     body=await request.json()
     if now>pairing_expiry or not hmac.compare_digest(str(body.get('code','')).upper(),pairing): raise HTTPException(403,'Código incorreto ou expirado. Reinicie o servidor para gerar outro.')
-    token=secrets.token_urlsafe(32); sessions[token]=now+86400
-    response.set_cookie('esteira_session',token,httponly=True,samesite='strict',max_age=86400,secure=request.url.scheme=='https')
+    if body.get('remember') is True and request.url.scheme!='https': raise HTTPException(422,'Para confiar neste dispositivo, use o endereço HTTPS do aplicativo.')
+    sessions.pop(request.cookies.get('esteira_session',''),None)
+    trust.forget(request,response)
+    if body.get('remember') is True:
+        trust.remember(request,response,body.get('deviceName'))
+        response.delete_cookie('esteira_session',httponly=True,secure=True,samesite='strict')
+    else:
+        token=secrets.token_urlsafe(32); sessions[token]=now+86400
+        response.set_cookie('esteira_session',token,httponly=True,samesite='strict',max_age=86400,secure=request.url.scheme=='https')
+    return {'ok':True}
+
+@app.post('/api/unpair')
+def unpair(request:Request,response:Response):
+    sessions.pop(request.cookies.get('esteira_session',''),None)
+    trust.forget(request,response)
+    response.delete_cookie('esteira_session',httponly=True,secure=request.url.scheme=='https',samesite='strict')
+    return {'ok':True}
+
+@app.get('/api/devices')
+def devices(request:Request):
+    if not trust.local_admin(request): raise HTTPException(403,'Gerencie os dispositivos pelo navegador do computador em localhost ou 127.0.0.1.')
+    current=request.state.trusted
+    with db() as c:
+        return [dict(id=r['id'],name=r['name'],created=r['created'],lastUsed=r['last_used'],expires=r['expires'],current=bool(current and current['id']==r['id']))
+                for r in c.execute('SELECT * FROM trusted_devices WHERE expires>? ORDER BY created DESC',(time.time(),))]
+
+@app.delete('/api/devices/{id}')
+def revoke_device(id:str,request:Request):
+    if not trust.local_admin(request): raise HTTPException(403,'Revogue o acesso pelo navegador do computador em localhost ou 127.0.0.1.')
+    with db() as c: c.execute('DELETE FROM trusted_devices WHERE id=?',(id,))
+    return {'ok':True}
+
+@app.delete('/api/devices')
+def revoke_all_devices(request:Request):
+    if not trust.local_admin(request): raise HTTPException(403,'Revogue o acesso pelo navegador do computador em localhost ou 127.0.0.1.')
+    with db() as c: c.execute('DELETE FROM trusted_devices')
     return {'ok':True}
 
 @app.get('/api/diagnostics')

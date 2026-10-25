@@ -52,6 +52,8 @@ def test_setup_only_exposes_public_certificate(tmp_path):
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
     base = f'http://127.0.0.1:{server.server_port}'
     try:
+        with pytest.raises(OSError):
+            start_setup('127.0.0.1',server.server_port,8000,ca,['127.0.0.1'])
         assert fingerprint.encode() in opener.open(base).read()
         public = x509.load_der_x509_certificate(opener.open(base + '/esteira-ca.cer').read())
         assert public.fingerprint(hashes.SHA256()) == ca.fingerprint(hashes.SHA256())
