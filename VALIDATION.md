@@ -123,3 +123,11 @@ Checkbox em Gravar agora e Enquadramento controla a prévia ao vivo, o canvas do
 Versão 0.4.3 aprovada no Windows: [execução 40141639888](https://github.com/brnvieira92/esteiravideos/actions/runs/40141639888), commit `c11ee8f`. Executável, instalação em caminho com espaços/acentos, smoke nos modos local/LAN/HTTPS com reação rotacionada e espelhamento, desinstalação e 34 testes Python aprovados. Frontend: 8 testes, build e lint aprovados.
 
 Chromium em 390×844 verificou pixels do canvas antes/depois do checkbox (webcam vermelha à esquerda tornou-se azul, gameplay continuou vermelha), persistência de `camFlip`, checkbox compartilhado em Gravar agora, câmera de teste ao vivo com transformação horizontal, ausência de erros JavaScript e de overflow. Testes de exportação verificaram os pixels do MP4 decodificado em resolução completa, evitando mistura de crominância de uma redução para 2×2. Não houve teste adicional em câmera física de celular.
+
+## Gestos na prévia — versão 0.4.4
+
+12 testes de frontend aprovados: geometria do recorte visível, âncora da pinça, proporções, limites extremos, direção com webcam espelhada e testes anteriores. Build TypeScript/Vite e lint aprovados. Backend: 34 testes aprovados.
+
+Chromium emulado com toque real via CDP (390×844, `isMobile` e `hasTouch`): dois contatos simultâneos aproximaram webcam e gameplay independentemente, levantar um contato e continuar arrastando manteve o zoom, arraste moveu a região, viewport permaneceu em escala 1 e scroll não mudou durante os gestos. Desfazer restaurou os dois enquadramentos de entrada, o botão + ajustou a região ativa, concluir retirou a camada que captura gestos, salvar persistiu as coordenadas e o resultado exportado reproduziu em 1080×1920. Sem erros JavaScript ou overflow horizontal. Não houve teste em celular físico.
+
+A transformação começa na região efetivamente visível após o recorte central de preenchimento, para permitir mover a imagem mesmo quando os campos anteriores abrangem o vídeo inteiro. O zoom preserva a proporção e a âncora entre os dedos, limita as coordenadas à fonte, considera o espelhamento da câmera e não afeta as legendas ou a outra região. O modo explícito de edição usa `touch-action:none`; ao concluir a camada é retirada.

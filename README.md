@@ -185,3 +185,15 @@ Em **Modo react → Gravar agora**, marque **Espelhar câmera na horizontal**. A
 A opção fica salva no corte e é herdada ao criar outro corte. Salve e exporte novamente para gerar um resultado com a nova orientação. Apenas a região da webcam é espelhada; gameplay, legendas e áudio mantêm a orientação/comportamento habitual. O vídeo original da câmera fica preservado, permitindo desfazer a escolha. Durante a gravação, a opção fica bloqueada; ajuste antes de começar.
 
 A versão 0.4.3 inclui a correção de rotação de celular da 0.4.2, validada no [instalador Windows 40141130226](https://github.com/brnvieira92/esteiravideos/actions/runs/40141130226). Vídeos que o telefone salva com rotação de 90°/270° agora usam as dimensões após a rotação para o recorte. Vídeos já importados são reconhecidos ao abrir o projeto; tarefas antigas usam a correção ao clicar em **Fila → Tentar novamente**, sem reenviar o arquivo.
+
+## Enquadrar com gestos na prévia (0.4.4)
+
+No celular, vá à **Prévia do Short** e toque em **Ajustar na prévia**. Toque na parte da webcam ou da gameplay para escolher a região e ajuste diretamente sobre a imagem:
+
+- Arraste com um dedo para mover a imagem dentro do enquadramento.
+- Afaste dois dedos para aproximar; junte para afastar. O ponto entre os dedos acompanha o gesto.
+- Os botões **+ / −** junto à prévia ajustam o zoom da última região tocada.
+- **Desfazer ajustes** restaura as regiões que estavam selecionadas quando você entrou nesse modo.
+- Toque em **Concluir enquadramento** para voltar a rolar normalmente sobre a prévia. Depois, salve o corte.
+
+Os ajustes aparecem imediatamente e usam as mesmas regiões salvas para a exportação e para os controles numéricos/deslizantes. A câmera espelhada acompanha a direção dos dedos. A imagem preenche cada parte do layout, portanto há um limite para afastar o zoom sem criar bordas vazias. O ajuste é feito com o vídeo pausado; a reprodução pode ser retomada pela prévia. Os controles anteriores continuam disponíveis.
