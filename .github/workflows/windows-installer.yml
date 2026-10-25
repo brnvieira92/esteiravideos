@@ -32,7 +32,17 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - name: Compilar, instalar e testar pacote autossuficiente
         shell: pwsh
-        run: ./scripts/build-windows.ps1
+        run: |
+          try {
+            & ./scripts/build-windows.ps1 *>&1 | Tee-Object -FilePath build-windows.log
+          } catch {
+            '### Falha na compilação do instalador' | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            '```text' | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            Get-Content build-windows.log -Tail 100 | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            $_.Exception.Message | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            '```' | Out-File $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            throw
+          }
       - name: Testes de regressão no Windows
         shell: pwsh
         run: |
