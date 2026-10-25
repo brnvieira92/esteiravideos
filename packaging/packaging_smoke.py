@@ -186,7 +186,7 @@ def main():
                     except subprocess.TimeoutExpired:
                         proc.kill()
                         proc.wait()
-                        raise AssertionError('Supervisor não encerrou corretamente.')
+                        raise AssertionError('Supervisor não encerrou corretamente: '+re.sub(r'(Pareamento[^\n]*?: )[A-F0-9]{6}',r'\1[omitido]',''.join(lines)))
                 assert proc.returncode == 0, ''.join(lines)
             if keepalive: keepalive.close()
             if secure:

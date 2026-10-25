@@ -117,7 +117,7 @@ def main():
             def capture_signals(self):
                 yield
 
-        server = Server(uvicorn.Config('backend.app:app', host=host, port=args.port, access_log=False, proxy_headers=False, **tls))
+        server = Server(uvicorn.Config('backend.app:app', host=host, port=args.port, access_log=False, proxy_headers=False, timeout_graceful_shutdown=5, **tls))
 
         def shutdown(*_):
             server.should_exit = True
