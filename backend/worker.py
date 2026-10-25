@@ -48,7 +48,7 @@ def run_job(j):
         else:
             # Jobs queued by older releases also need dimensions after autorotation.
             if d['meta'].get('orientationVersion')!=1: d['meta']=probe(d['path'])
-            if d.get('reactionPath') and d['reactionMeta'].get('orientationVersion')!=1: d['reactionMeta']=probe(d['reactionPath'])
+            if d.get('reactionPath') and d['reactionMeta'].get('orientationVersion')!=1: d['reactionMeta']=probe(d['reactionPath'],allow_audio=True)
             filt=('[0:v]scale=trunc(iw/2)*2:trunc(ih/2)*2,setsar=1[v]' if proxy else geometry(d,d['meta'])); label='v'
             if d.get('subtitles'):
                 # Fixed internally generated basename; cwd keeps user paths out of the filter grammar.

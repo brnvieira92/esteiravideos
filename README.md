@@ -240,3 +240,11 @@ Alterar **Reação começa no vídeo base em (segundos)** também move os dois l
 Em **Resultados**, marque de 2 a 20 vídeos exportados e clique em **Mesclar vídeos selecionados**. Dê um nome ao arquivo final e use as setas para ordenar os trechos. Clique em **Gerar vídeo único** e acompanhe em **Fila**. O novo MP4 aparecerá em Resultados, pronto para reproduzir e baixar.
 
 A união é sequencial, sem transições, em 1080×1920. Cada trecho conserva sua imagem e áudio; trechos sem som recebem silêncio. As legendas já renderizadas permanecem na imagem e o SRT reúne os tempos dos trechos. Os resultados originais são preservados. A mesma sequência já concluída ou em processamento é reutilizada. Enquanto uma mesclagem estiver na fila ou processando, os vídeos utilizados e seus projetos ficam protegidos contra exclusão. O novo resultado pertence ao projeto do primeiro vídeo da sequência.
+
+## Narrar sem câmera (0.4.10)
+
+Em **Modo react → Gravar agora → Tipo de gravação**, selecione **Somente microfone (narração)**. Escolha o microfone e clique em **Ativar microfone**. O aplicativo solicita apenas o microfone, sem abrir a câmera. Posicione o vídeo base no monitor e clique em **Gravar enquanto assisto**. Ao parar, a voz é salva no projeto e o intervalo do corte é ajustado automaticamente à duração da gravação.
+
+O layout é **Apenas gameplay**: a imagem vem do vídeo base, e a narração fica sincronizada como fonte de áudio separada. Em **Áudio do react**, ajuste **Vídeo base** e **Reação / voz**; zere o primeiro para deixar somente sua narração. Salve o corte e exporte normalmente. Use fones para evitar que o microfone capture novamente o som do vídeo.
+
+No celular, a gravação continua exigindo o endereço HTTPS e o certificado confiável configurados pelo atalho Wi-Fi. Se houver falha de envio, a narração temporária pode ser reenviada ou baixada, como as gravações com câmera.

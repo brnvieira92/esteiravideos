@@ -25,3 +25,5 @@ select{width:100%;margin-top:7px;background:#12151d;color:#e8e5ef;border:1px sol
 .layout-icon.webcam{display:block}.layout-icon.webcam i:first-child{display:block;width:100%;height:100%;border-radius:2px}.layout-icon.webcam i:last-child{display:none}
 
 .merge-editor{margin:20px 0;padding:20px;border:1px solid var(--border,#30333e);border-radius:12px;background:#191c24}.merge-editor label{display:grid;gap:8px;max-width:500px}.merge-editor li{padding:10px 0;overflow-wrap:anywhere}.merge-editor li button{margin-left:8px}.merge-editor>button{margin:8px 8px 0 0}
+
+.react-studio video[hidden]{display:none}

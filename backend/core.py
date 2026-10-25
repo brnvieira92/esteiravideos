@@ -34,13 +34,15 @@ CREATE TABLE IF NOT EXISTS jobs(id TEXT PRIMARY KEY,project_id TEXT NOT NULL,sna
 
 def uid(): return uuid.uuid4().hex
 
-def probe(path):
+def probe(path,allow_audio=False):
     r = subprocess.run([FFPROBE,'-v','error','-protocol_whitelist','file,pipe','-format_whitelist','mov,matroska,webm','-show_format','-show_streams','-of','json',str(path)], capture_output=True, text=True, timeout=60)
     if r.returncode: raise ValueError('FFprobe não conseguiu validar o vídeo.')
     d=json.loads(r.stdout); v=next((s for s in d['streams'] if s['codec_type']=='video'),None)
-    if not v: raise ValueError('Arquivo sem faixa de vídeo.')
+    audio=next((s for s in d['streams'] if s['codec_type']=='audio'),None)
+    if not v and not (allow_audio and audio): raise ValueError('Arquivo sem faixa de vídeo.')
     duration=float(d['format'].get('duration',0))
     if duration<=0: raise ValueError('Duração inválida.')
+    if not v: return dict(duration=duration,width=0,height=0,rotation=0,orientationVersion=1,fps=0,audio=True,audioOnly=True,codec=audio['codec_name'])
     n,den=map(int,v.get('avg_frame_rate','0/1').split('/'))
     # Browsers and FFmpeg autorotate before crop. Encoded dimensions alone are
     # incorrect for portrait phone recordings stored as landscape + display matrix.

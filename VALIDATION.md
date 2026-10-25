@@ -182,3 +182,10 @@ Chromium em viewport móvel 390×844 verificou webcam separada vermelha no alto 
 - Renderização FFmpeg real: sequência vermelho/azul, duração somada, 1080×1920, fonte com áudio e fonte silenciosa, SRT deslocado, preservação dos arquivos, bloqueio de exclusão enquanto pendente, deduplicação e ordem invertida.
 - 14 testes frontend, lint e build aprovados.
 - Chromium em viewport mobile: selecionou dois resultados, inverteu ordem, informou nome e enviou mesclagem à fila sem erros JavaScript ou rolagem horizontal. Sem aparelho físico nesta validação.
+
+## 0.4.10 — gravação somente com microfone
+
+- Dois testes com arquivos reais WebM/Opus e MP4/AAC: áudio sem vídeo aceito apenas como reação, recusa como vídeo base, metadados preservados, restrição ao layout gameplay e exportação H264/AAC com duração correta.
+- Análise do áudio exportado: voz sintética de 880 Hz preservada e som original de 440 Hz ausente quando volume do vídeo base é zero. Alterar volume da narração cria nova exportação.
+- Chromium mobile com dispositivos simulados: getUserMedia recebeu video=false e retornou uma faixa de áudio e nenhuma de vídeo; gravou enquanto assistia desde 7,11 s, enviou áudio de 1,44 s, definiu fim 8,55 s, salvou e reproduziu sincronizado sem erros JS/overflow. Sem teste em celular físico.
+- Suíte completa: 53 testes Python e 14 testes da interface aprovados; build TypeScript/Vite e lint aprovados. Os novos testes cancelam as tarefas auxiliares de comparação de volume para não deixarem fila pendente aos testes de cancelamento.

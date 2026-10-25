@@ -29,10 +29,10 @@ def fingerprint(d):
     if result['layout'] in ('combined','webcam'):
         result.update(cam=b('cam'),camFlip=bool(d.get('camFlip',False)))
         if result['layout']=='combined': result['split']=float(d.get('split',.35))
-        if d.get('reactionPath'):
-            result.update(reactionPath=d['reactionPath'],reactionOffset=float(d.get('reactionOffset',0)),
-                          reactionSize=[d.get('reactionMeta',{}).get('width'),d.get('reactionMeta',{}).get('height')],
-                          baseVolume=0.0 if result['layout']=='webcam' else float(d.get('baseVolume',.35)),reactionVolume=float(d.get('reactionVolume',1)))
+    if d.get('reactionPath'):
+        result.update(reactionPath=d['reactionPath'],reactionOffset=float(d.get('reactionOffset',0)),
+                      reactionSize=[d.get('reactionMeta',{}).get('width'),d.get('reactionMeta',{}).get('height')],
+                      baseVolume=0.0 if result['layout']=='webcam' else float(d.get('baseVolume',.35)),reactionVolume=float(d.get('reactionVolume',1)))
     result['subtitles']=[{'start':float(s['start']),'end':float(s['end']),'text':s['text']} for s in d.get('subtitles',[])]
     if result['subtitles']:
         result.update(fontSize=int(d.get('fontSize',64)),margin=int(d.get('margin',120)),outline=int(d.get('outline',3)))

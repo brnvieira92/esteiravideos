@@ -175,12 +175,12 @@ async def upload(pid:str,request:Request,role:str='base',offset:float=0):
                 f.write(chunk)
         if remux:
             def make_seekable():
-                command=[FFMPEG,'-v','error','-nostdin','-y','-protocol_whitelist','file,pipe','-format_whitelist','mov,matroska,webm','-i',str(raw),'-map','0:v:0','-map','0:a?','-c','copy']
+                command=[FFMPEG,'-v','error','-nostdin','-y','-protocol_whitelist','file,pipe','-format_whitelist','mov,matroska,webm','-i',str(raw),'-map','0:v:0?' if role=='reaction' else '0:v:0','-map','0:a?','-c','copy']
                 if suffix=='.mp4': command+=['-movflags','+faststart']
                 r=subprocess.run(command+[str(path)],capture_output=True,timeout=120)
-                if r.returncode: raise ValueError('Não foi possível validar a gravação da câmera. Tente gravar novamente ou importe um arquivo.')
+                if r.returncode: raise ValueError('Não foi possível validar a gravação. Tente gravar novamente ou importe um arquivo.')
             await asyncio.to_thread(make_seekable)
-        meta=await asyncio.to_thread(probe,path)
+        meta=await asyncio.to_thread(probe,path,role=='reaction')
         with db() as c:
             c.execute('BEGIN IMMEDIATE')
             if role=='base' and c.execute("SELECT 1 FROM media WHERE project_id=? AND role='base'",(pid,)).fetchone(): raise HTTPException(409,'Já há uma gravação neste projeto.')
@@ -211,6 +211,7 @@ def project(pid:str):
 @app.post('/api/media/{mid}/proxy')
 def make_proxy(mid:str):
     m=get('media',mid); meta=media_meta(m)
+    if meta.get('audioOnly'): raise ValueError('Narrações não precisam de cópia de vídeo compatível.')
     d=validate_cut(dict(start=0,end=meta['duration'],name='Cópia de visualização'),meta['duration'])
     d.update(kind='proxy',media_id=mid,path=m['path'],meta=meta)
     with db() as c:
