@@ -234,3 +234,9 @@ O intervalo do corte continua pertencendo à linha do tempo do projeto e, com re
 Ao enviar um vídeo de reação, posicione primeiro o vídeo base no segundo desejado. O envio usa essa posição como início e ajusta o fim automaticamente à duração real do arquivo. Gravações feitas pelo sistema usam o início registrado durante a captura. Por exemplo, reação de 15 segundos começando em 7 segundos gera um corte de 7 a 22 segundos.
 
 Alterar **Reação começa no vídeo base em (segundos)** também move os dois limites do corte automaticamente, mantendo os enquadramentos. É possível encurtar o corte manualmente depois. Se a reação ultrapassar o início ou o fim do original, o sistema avisa e usa apenas o trecho em comum; sincronizações sem sobreposição são recusadas. Salve o corte para conservar o novo intervalo.
+
+## Mesclar resultados em um vídeo (0.4.9)
+
+Em **Resultados**, marque de 2 a 20 vídeos exportados e clique em **Mesclar vídeos selecionados**. Dê um nome ao arquivo final e use as setas para ordenar os trechos. Clique em **Gerar vídeo único** e acompanhe em **Fila**. O novo MP4 aparecerá em Resultados, pronto para reproduzir e baixar.
+
+A união é sequencial, sem transições, em 1080×1920. Cada trecho conserva sua imagem e áudio; trechos sem som recebem silêncio. As legendas já renderizadas permanecem na imagem e o SRT reúne os tempos dos trechos. Os resultados originais são preservados. A mesma sequência já concluída ou em processamento é reutilizada. Enquanto uma mesclagem estiver na fila ou processando, os vídeos utilizados e seus projetos ficam protegidos contra exclusão. O novo resultado pertence ao projeto do primeiro vídeo da sequência.

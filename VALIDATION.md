@@ -175,3 +175,10 @@ Chromium em viewport móvel 390×844 verificou webcam separada vermelha no alto 
 - 14 testes da interface aprovados, incluindo 7 + 15 = 22, mudança de início, milissegundos, limites do original e ausência de sobreposição.
 - Lint e build TypeScript/Vite aprovados.
 - Chromium: envio de MP4 sintético com o original posicionado em 7 s definiu corte 7–22 s; alteração da sincronização para 10 s definiu 10–25 s; início 20 s em original de 30 s limitou o fim a 30 s. Todos os intervalos foram salvos e conferidos pela API, sem erros JavaScript. Não foi usado celular físico nesta validação.
+
+## 0.4.9 — mesclagem de resultados
+
+- Suíte Python anterior e novo teste de união: 50 aprovados; ampliado o teste de união com e sem SRT: ambos aprovados separadamente.
+- Renderização FFmpeg real: sequência vermelho/azul, duração somada, 1080×1920, fonte com áudio e fonte silenciosa, SRT deslocado, preservação dos arquivos, bloqueio de exclusão enquanto pendente, deduplicação e ordem invertida.
+- 14 testes frontend, lint e build aprovados.
+- Chromium em viewport mobile: selecionou dois resultados, inverteu ordem, informou nome e enviou mesclagem à fila sem erros JavaScript ou rolagem horizontal. Sem aparelho físico nesta validação.

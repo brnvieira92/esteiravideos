@@ -18,6 +18,8 @@ def cut_name(project_name,number):
 
 
 def fingerprint(d):
+    if d.get('kind')=='merge':
+        return hashlib.sha256(json.dumps([s['id'] for s in d['sources']]).encode()).hexdigest()
     # Whitelist render-affecting fields. Renaming a cut doesn't change its video.
     b=lambda key:{k:float(v) for k,v in normalize_box(d.get(key,dict(x=0,y=0,w=1,h=1))).items()}
     result={'path':d.get('path'),'start':float(d['start']),'end':float(d['end']),

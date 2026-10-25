@@ -5,6 +5,7 @@ from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from .core import *
 from .reactions import attach_reaction
+from .merge import dependencies
 from . import trusted_devices as trust
 from .export_policy import next_cut_number, cut_name, fingerprint, available_jobs
 
@@ -148,6 +149,7 @@ def delete_project(pid:str):
     with db() as c:
         c.execute('BEGIN IMMEDIATE')
         if c.execute("SELECT 1 FROM jobs WHERE project_id=? AND (state IN ('aguardando','processando') OR running=1)",(pid,)).fetchone(): raise HTTPException(409,'Cancele as tarefas e aguarde o trabalhador antes de excluir.')
+        if dependencies(c,project_id=pid): raise HTTPException(409,'Este projeto está sendo usado em uma mesclagem. Aguarde ou cancele a tarefa.')
         for table in ('media','cuts','jobs','cut_sequences','projects'): c.execute(f'DELETE FROM {table} WHERE '+('id' if table=='projects' else 'project_id')+'=?',(pid,))
     shutil.rmtree(DATA/pid,ignore_errors=True)
     return {'ok':True}
@@ -318,6 +320,7 @@ def delete_result(jid:str):
         row=c.execute('SELECT * FROM jobs WHERE id=?',(jid,)).fetchone()
         if not row: raise HTTPException(404,'Resultado não encontrado.')
         j=dict(row)
+        if dependencies(c,job_id=jid): raise HTTPException(409,'Este vídeo está sendo usado em uma mesclagem. Aguarde ou cancele a tarefa.')
         if j['state']=='excluído': return {'ok':True}
         if j['state']!='concluído' or j['running']:
             raise HTTPException(409,'Aguarde a conclusão do processamento antes de excluir o resultado.')
@@ -362,6 +365,35 @@ def result_file(jid:str,kind:str,download:bool=False):
     if path is None: raise HTTPException(404)
     name=re.sub(r'[^\w -]','',j['title'])[:80] or 'corte'
     return FileResponse(path,filename=f'{name}-{jid[:6]}.{kind}' if download else None,media_type='video/mp4' if kind=='mp4' else 'application/x-subrip')
+
+@app.post('/api/results/merge')
+async def merge_results(request:Request):
+    body=await request.json(); ids=body.get('ids');title=str(body.get('title','Vídeos mesclados')).strip()[:150]
+    if not isinstance(ids,list) or not 2<=len(ids)<=20 or any(not isinstance(i,str) for i in ids) or len(set(ids))!=len(ids):
+        raise ValueError('Selecione de 2 a 20 vídeos diferentes, na ordem desejada.')
+    if not title: raise ValueError('Informe um nome para o vídeo final.')
+    with db() as c:
+        c.execute('BEGIN IMMEDIATE');sources=[]
+        for jid in ids:
+            row=c.execute('SELECT * FROM jobs WHERE id=?',(jid,)).fetchone()
+            if not row or row['state']!='concluído' or json.loads(row['snapshot']).get('kind') in ('proxy','preview'):
+                raise ValueError('Selecione somente vídeos exportados e concluídos.')
+            path=DATA/row['project_id']/(jid+'.mp4')
+            if not path.is_file() or path.resolve().parent!=(DATA/row['project_id']).resolve(): raise ValueError('Um dos vídeos não está mais disponível.')
+            sources.append(dict(id=jid,project_id=row['project_id'],path=str(path),duration=probe(path)['duration']))
+        pid=sources[0]['project_id'];subtitles=[];offset=0
+        for source in sources:
+            sidecar=Path(source['path']).with_suffix('.srt')
+            text=sidecar.read_text(encoding='utf-8').strip() if sidecar.is_file() else ''
+            if text:
+                for sub in parse_srt(text):
+                    subtitles.append({**sub,'start':sub['start']+offset,'end':sub['end']+offset})
+            offset+=source['duration']
+        d=dict(kind='merge',sources=sources,start=0,end=offset,subtitles=subtitles)
+        match=available_jobs(c,pid,'merge').get(fingerprint(d))
+        if match and match['state']!='excluído': return {'id':match['id'],'reused':True}
+        jid=uid();c.execute('INSERT INTO jobs(id,project_id,snapshot,title) VALUES (?,?,?,?)',(jid,pid,json.dumps(d),title))
+    return {'id':jid,'reused':False}
 
 @app.post('/api/results/zip')
 async def results_zip(request:Request):
