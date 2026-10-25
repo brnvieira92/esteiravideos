@@ -197,3 +197,11 @@ No celular, vá à **Prévia do Short** e toque em **Ajustar na prévia**. Toque
 - Toque em **Concluir enquadramento** para voltar a rolar normalmente sobre a prévia. Depois, salve o corte.
 
 Os ajustes aparecem imediatamente e usam as mesmas regiões salvas para a exportação e para os controles numéricos/deslizantes. A câmera espelhada acompanha a direção dos dedos. A imagem preenche cada parte do layout, portanto há um limite para afastar o zoom sem criar bordas vazias. O ajuste é feito com o vídeo pausado; a reprodução pode ser retomada pela prévia. Os controles anteriores continuam disponíveis.
+
+## Nomes automáticos e exportação sem repetição (0.4.5)
+
+Os novos cortes recebem nomes como **Nome do projeto — parte 1**, **parte 2**, **parte 3**. A sugestão aparece no editor; a numeração definitiva é atribuída ao salvar, evitando colisões entre celular e computador. A sequência é independente por projeto e continua após excluir ou renomear cortes. Você pode editar o nome; novos nomes personalizados repetidos no mesmo projeto são recusados. Os cortes antigos conservam seus títulos. Duplicar um corte também sugere o próximo número.
+
+Antes de adicionar uma exportação à fila, o servidor compara o conteúdo solicitado com o histórico do projeto. Cortes com o mesmo trecho, enquadramento, reação, áudio e legendas não são gerados outra vez se já estiverem na fila, em processamento ou concluídos. Só renomear o corte não gera outro vídeo. A comparação também reconhece cópias de cortes com conteúdo igual e resultados de versões anteriores. A interface informa quantos cortes foram adicionados e quantos não foram repetidos.
+
+Excluir um vídeo em Resultados mantém o histórico: selecionar todos os cortes depois disso não recria automaticamente os vídeos apagados. Para refazer um resultado, marque **Gerar novamente cortes já exportados**, junto à lista de cortes, e exporte. Essa opção volta a ficar desmarcada após o pedido e ainda evita duplicar tarefas que estejam na fila/processando. Alterar o trecho ou outra configuração que afete o vídeo permite uma nova exportação normalmente. Tarefas que falharam ou foram canceladas podem ser tentadas novamente. Prévias e exportações completas são verificadas separadamente.

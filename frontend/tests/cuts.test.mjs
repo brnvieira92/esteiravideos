@@ -19,3 +19,8 @@ test('new interval stays within source and remains valid at end of recording',()
   assert.ok(next.start>=0&&next.start<next.end&&next.end<=100);
  }
 });
+
+test('a new draft accepts the project suggestion and requests authoritative automatic naming',()=>{
+ const cut=newCutFrom({...blank(),name:'Nome antigo',autoName:false},1,20,'Projeto — parte 8');
+ assert.equal(cut.name,'Projeto — parte 8');assert.equal(cut.autoName,true);assert.equal(cut.id,undefined);
+});

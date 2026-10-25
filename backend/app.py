@@ -5,6 +5,7 @@ from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from .core import *
 from .reactions import attach_reaction
+from .export_policy import next_cut_number, cut_name, fingerprint, available_jobs
 
 sessions={}; attempts={}; pairing=secrets.token_hex(3).upper(); pairing_expiry=time.time()+600
 LAN=os.getenv('ESTEIRA_LAN')=='1'
@@ -106,7 +107,7 @@ def delete_project(pid:str):
     with db() as c:
         c.execute('BEGIN IMMEDIATE')
         if c.execute("SELECT 1 FROM jobs WHERE project_id=? AND (state IN ('aguardando','processando') OR running=1)",(pid,)).fetchone(): raise HTTPException(409,'Cancele as tarefas e aguarde o trabalhador antes de excluir.')
-        for table in ('media','cuts','jobs','projects'): c.execute(f'DELETE FROM {table} WHERE '+('id' if table=='projects' else 'project_id')+'=?',(pid,))
+        for table in ('media','cuts','jobs','cut_sequences','projects'): c.execute(f'DELETE FROM {table} WHERE '+('id' if table=='projects' else 'project_id')+'=?',(pid,))
     shutil.rmtree(DATA/pid,ignore_errors=True)
     return {'ok':True}
 
@@ -160,6 +161,7 @@ def project(pid:str):
             if meta!=json.loads(row['meta']): c.execute('UPDATE media SET meta=? WHERE id=?',(json.dumps(meta),row['id']))
         p['media']={'id':m['id'],**metadata[m['id']]} if m else None
         p['reactions']=[{'id':r['id'],'offset':r['offset'],**metadata[r['id']]} for r in rows if r['role']=='reaction']
+        p['nextCutName']=cut_name(p['name'],next_cut_number(c,pid))
         p['cuts']=[{'subtitles':[],'id':r['id'],**json.loads(r['data'])} for r in c.execute('SELECT * FROM cuts WHERE project_id=? ORDER BY rowid',(pid,))]
     return p
 
@@ -189,10 +191,24 @@ def video(mid:str): return FileResponse(get('media',mid)['path'])
 
 @app.post('/api/projects/{pid}/cuts')
 async def save_cut(pid:str,request:Request):
-    m=media_for(pid); d=attach_reaction(validate_cut(await request.json(),json.loads(m['meta'])['duration']),pid); d.pop('reactionPath',None); d.pop('reactionMeta',None); id=d.pop('id',None)
-    if id and get('cuts',id)['project_id']!=pid: raise HTTPException(403)
-    id=id or uid()
-    with db() as c: c.execute('INSERT OR REPLACE INTO cuts VALUES (?,?,?)',(id,pid,json.dumps(d,ensure_ascii=False)))
+    m=media_for(pid); body=await request.json()
+    d=attach_reaction(validate_cut(body,json.loads(m['meta'])['duration']),pid); d.pop('reactionPath',None); d.pop('reactionMeta',None); id=d.pop('id',None)
+    previous_cut=get('cuts',id) if id else None
+    if previous_cut and previous_cut['project_id']!=pid: raise HTTPException(403)
+    with db() as c:
+        c.execute('BEGIN IMMEDIATE')
+        number=next_cut_number(c,pid)
+        if not id and (body.get('autoName') is True or not str(body.get('name','')).strip() or ('autoName' not in body and body.get('name')=='Novo corte')):
+            d['name']=cut_name(get('projects',pid)['name'],number)
+        d['name']=d['name'].strip() or cut_name(get('projects',pid)['name'],number)
+        changed_name=not previous_cut or json.loads(previous_cut['data'])['name'].strip().casefold()!=d['name'].casefold()
+        for row in c.execute('SELECT id,data FROM cuts WHERE project_id=?',(pid,)):
+            if changed_name and row['id']!=id and json.loads(row['data'])['name'].strip().casefold()==d['name'].casefold():
+                raise ValueError('Já existe um corte com esse nome neste projeto. Escolha outro nome.')
+        if not id:
+            c.execute('INSERT INTO cut_sequences VALUES (?,?) ON CONFLICT(project_id) DO UPDATE SET next_number=excluded.next_number',(pid,number+1))
+        id=id or uid(); d['autoName']=False
+        c.execute('INSERT OR REPLACE INTO cuts VALUES (?,?,?)',(id,pid,json.dumps(d,ensure_ascii=False)))
     return {'id':id,**d}
 
 @app.delete('/api/cuts/{cid}')
@@ -215,18 +231,25 @@ async def export(pid:str,request:Request):
     if not ids or len(ids)>100: raise ValueError('Selecione entre 1 e 100 cortes.')
     key=str(body.get('requestId',''))
     if not re.fullmatch('[a-zA-Z0-9-]{16,80}',key): raise ValueError('Identificador de requisição inválido.')
-    jobs=[]
+    jobs=[]; skipped=[]; created=0; kind='preview' if body.get('preview') else 'export'
     with db() as c:
         c.execute('BEGIN IMMEDIATE')
+        existing=available_jobs(c,pid,kind,repeat=body.get('force') is True)
         for index,cid in enumerate(dict.fromkeys(ids)):
             cut=get('cuts',cid)
             if cut['project_id']!=pid: raise HTTPException(403)
             d=attach_reaction(validate_cut(json.loads(cut['data']),json.loads(m['meta'])['duration']),pid); d.update(path=m['path'],meta=json.loads(m['meta']))
             if body.get('preview'): d['end']=min(d['end'],d['start']+5); d['subtitles']=clipped_subtitles(d.get('subtitles',[]),0,d['end']-d['start'])
+            d.update(kind=kind,sourceCutId=cid)
             jid=hashlib.sha256((pid+key+str(index)).encode()).hexdigest()[:32]
-            c.execute('INSERT OR IGNORE INTO jobs(id,project_id,snapshot,title) VALUES (?,?,?,?)',(jid,pid,json.dumps(d),d['name']))
-            jobs.append(jid)
-    return {'ids':jobs}
+            previous=c.execute('SELECT * FROM jobs WHERE id=?',(jid,)).fetchone()
+            match=dict(previous) if previous else existing.get(fingerprint(d))
+            if match:
+                jobs.append(match['id']); skipped.append(dict(cutId=cid,jobId=match['id'],state=match['state']))
+                continue
+            c.execute('INSERT INTO jobs(id,project_id,snapshot,title) VALUES (?,?,?,?)',(jid,pid,json.dumps(d),d['name']))
+            created+=1; jobs.append(jid); existing[fingerprint(d)]={'id':jid,'state':'aguardando'}
+    return {'ids':list(dict.fromkeys(jobs)),'created':created,'skipped':skipped}
 
 @app.get('/api/jobs')
 def jobs():
@@ -236,8 +259,12 @@ def jobs():
 def job_action(jid:str,action:str):
     j=get('jobs',jid)
     with db() as c:
+        c.execute('BEGIN IMMEDIATE')
         if action=='cancel' and j['state'] in ('aguardando','processando'): c.execute("UPDATE jobs SET state='cancelado' WHERE id=?",(jid,))
         elif action=='retry' and j['state'] in ('cancelado','falhou'):
+            snapshot=json.loads(j['snapshot']); kind=snapshot.get('kind','export')
+            match=available_jobs(c,j['project_id'],kind).get(fingerprint(snapshot)) if kind!='proxy' else None
+            if match and match['state']!='excluído': return {'ok':True,'reused':True,'id':match['id']}
             new=uid(); c.execute('INSERT INTO jobs(id,project_id,snapshot,title,description) VALUES (?,?,?,?,?)',(new,j['project_id'],j['snapshot'],j['title'],j['description']))
         else: raise HTTPException(409,'Ação indisponível neste estado.')
     return {'ok':True}

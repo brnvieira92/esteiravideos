@@ -16,7 +16,7 @@ def test_mirror_changes_only_camera_pixels_and_preserves_original(tmp_path,separ
     base=upload('base'); reaction=upload('reaction') if separate else None
     outputs=[]
     for mirror in [False,True]:
-        d=dict(name='Espelho',start=0,end=.6,layout='combined',split=.5,game=dict(x=0,y=0,w=1,h=1),cam=dict(x=0,y=0,w=1,h=1),camFlip=mirror)
+        d=dict(name='Espelho '+str(mirror),start=0,end=.6,layout='combined',split=.5,game=dict(x=0,y=0,w=1,h=1),cam=dict(x=0,y=0,w=1,h=1),camFlip=mirror)
         if reaction: d.update(reactionId=reaction['id'],reactionOffset=0)
         saved=post('/projects/'+p['id']+'/cuts',d)
         assert saved['camFlip']==mirror

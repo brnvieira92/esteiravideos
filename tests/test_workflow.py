@@ -206,7 +206,7 @@ def test_delete_result_removes_only_generated_files_and_retains_idempotency():
     assert post('/projects/'+p['id']+'/export',dict(ids=[cut['id']],requestId=key))['ids']==[jid]
     with db() as conn: assert conn.execute('SELECT state FROM jobs WHERE id=?',(jid,)).fetchone()[0]=='excluído'
     # A new export remains available, using the saved cut and preserved original.
-    new=post('/projects/'+p['id']+'/export',dict(ids=[cut['id']],requestId='new-after-deletion-12345'))['ids'][0]
+    new=post('/projects/'+p['id']+'/export',dict(ids=[cut['id']],requestId='new-after-deletion-12345',force=True))['ids'][0]
     assert new!=jid
     post('/jobs/'+new+'/cancel',{})
 

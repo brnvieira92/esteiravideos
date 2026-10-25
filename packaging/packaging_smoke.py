@@ -149,6 +149,12 @@ def main():
                 assert any(s['codec_type'] == 'audio' for s in meta['streams'])
                 assert abs(float(meta['format']['duration']) - 1.2) < .2
                 assert request('/api/diagnostics')['libass']
+                duplicate={k:v for k,v in cut.items() if k!='id'}
+                duplicate['autoName']=True
+                next_cut=request('/api/projects/'+p['id']+'/cuts',duplicate)
+                assert next_cut['name']=='Teste do instalador — parte 2'
+                reused=request('/api/projects/'+p['id']+'/export',{'ids':[next_cut['id']],'requestId':'package-repeat-123456789'})
+                assert reused['created']==0 and reused['ids']==[jid]
                 for attempt in range(30):
                     try:
                         request('/api/jobs/'+jid,method='DELETE')
@@ -157,8 +163,10 @@ def main():
                         if e.code!=409 or attempt==29: raise
                         time.sleep(.2)
                 preserved=request('/api/projects/'+p['id'])
-                assert preserved['media'] and len(preserved['cuts'])==1 and preserved['reactions'][0]['id']==reaction['id']
+                assert preserved['media'] and len(preserved['cuts'])==2 and preserved['reactions'][0]['id']==reaction['id']
                 assert all(j['id']!=jid for j in request('/api/jobs'))
+                remembered=request('/api/projects/'+p['id']+'/export',{'ids':[next_cut['id']],'requestId':'package-deleted-123456789'})
+                assert remembered['created']==0 and remembered['skipped'][0]['state']=='excluído'
                 try:
                     request('/api/jobs/'+jid+'/file/mp4',raw=True)
                     raise AssertionError('Vídeo excluído permaneceu disponível.')

@@ -135,3 +135,13 @@ A transformação começa na região efetivamente visível após o recorte centr
 Instalador 0.4.4 aprovado em Windows Server 2022: [execução 40199751067](https://github.com/brnvieira92/esteiravideos/actions/runs/40199751067), commit `c41525c`. Executável, instalação silenciosa, smoke local/LAN/HTTPS, desinstalação, 34 testes Python e 12 testes de frontend concluídos com sucesso. Build e lint também aprovados. Artefato `EsteiraVideos-Windows-x64` disponível.
 
 Teste adicional com contatos de toque via CDP confirmou a direção do arraste com webcam espelhada e que um cancelamento de toque permite começar um novo gesto normalmente. Inspeção visual da tela móvel confirmou os controles junto à prévia e as duas regiões identificadas. O teste cobre Chromium emulado; não foi utilizado Android/iPhone físico.
+
+## Numeração e prevenção de exportação repetida — versão 0.4.5
+
+Tabela adicional `cut_sequences` preserva a sequência por projeto sem alterar a versão de esquema ou renomear cortes existentes. A alocação e a comparação de nomes usam transação SQLite `BEGIN IMMEDIATE`. Projetos antigos iniciam considerando seus cortes e os números encontrados nos títulos. Sugestões desatualizadas de clientes simultâneos são corrigidas ao salvar. Títulos duplicados antigos continuam editáveis; novos conflitos são recusados.
+
+Exportações são comparadas por campos que afetam a renderização, incluindo fonte/dimensões, intervalo, regiões, reação/sincronização, volumes, espelhamento e legendas/estilo. Nome, ID do corte e ID da requisição não criam uma diferença de vídeo. A transação serializa pedidos concorrentes. Histórico de resultados excluídos é preservado; regeneração exige `force:true`, que também reaproveita tarefas ativas. Prévias usam categoria separada. Cancelamentos/falhas não bloqueiam novo pedido; retry reaproveita um resultado disponível ou tarefa ativa.
+
+Testes exercitam contador após exclusão/renomeação, sugestões antigas, duas gravações simultâneas, duas exportações simultâneas, cópia com conteúdo igual, renomeação sem reexportar, alteração de renderização, resultado excluído ou ausente, regeneração explícita, prévia separada, histórico de versões anteriores, retry e títulos duplicados legados. O smoke do executável também verifica nome automático e histórico antes/depois da exclusão.
+
+Chromium em viewport 390×844 criou e salvou partes 1 e 2; exportou a primeira, adicionou só a segunda ao exportar a seleção inteira e reutilizou ambos os resultados ao repetir o pedido. Mantidos apenas dois jobs e sugestão parte 3; sem erros JavaScript ou overflow.
