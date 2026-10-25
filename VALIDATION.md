@@ -169,3 +169,9 @@ Novos testes exportam webcam do original e reação separada, com/sem espelhamen
 Instalador 0.4.7 aprovado em Windows Server 2022: [execução 40211354811](https://github.com/brnvieira92/esteiravideos/actions/runs/40211354811), commit `586a88a`. Build/lint, 13 testes de frontend, smoke do executável e da instalação (local/LAN/HTTPS, webcam-only com reação rotacionada, áudio, legenda, reinício e revogação), desinstalação e 49 testes Python aprovados. Artefato `EsteiraVideos-Windows-x64` disponível.
 
 Chromium em viewport móvel 390×844 verificou webcam separada vermelha no alto e embaixo do canvas, volume do base igual a zero, volume da reação igual a um, controles exclusivos de webcam, uma única região na prévia, zoom modificando `cam`, persistência do layout `webcam`, exportação e reprodução 1080×1920; sem erros JavaScript ou overflow. O teste usou navegador emulado, sem telefone físico.
+
+## 0.4.8 — intervalo automático da reação
+
+- 14 testes da interface aprovados, incluindo 7 + 15 = 22, mudança de início, milissegundos, limites do original e ausência de sobreposição.
+- Lint e build TypeScript/Vite aprovados.
+- Chromium: envio de MP4 sintético com o original posicionado em 7 s definiu corte 7–22 s; alteração da sincronização para 10 s definiu 10–25 s; início 20 s em original de 30 s limitou o fim a 30 s. Todos os intervalos foram salvos e conferidos pela API, sem erros JavaScript. Não foi usado celular físico nesta validação.

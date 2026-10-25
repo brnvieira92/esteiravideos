@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {blank,newCutFrom} from '../src/cuts.ts';
+import {blank,newCutFrom,reactionInterval} from '../src/cuts.ts';
 
 test('new cuts inherit framing and style without inheriting identity, interval or subtitle text',()=>{
  const current={...blank(),id:'saved-cut',name:'Primeiro',start:1,end:8,layout:'combined',split:.48,camFlip:true,
@@ -23,4 +23,13 @@ test('new interval stays within source and remains valid at end of recording',()
 test('a new draft accepts the project suggestion and requests authoritative automatic naming',()=>{
  const cut=newCutFrom({...blank(),name:'Nome antigo',autoName:false},1,20,'Projeto — parte 8');
  assert.equal(cut.name,'Projeto — parte 8');assert.equal(cut.autoName,true);assert.equal(cut.id,undefined);
+});
+
+test('reaction interval follows its start and actual duration, including recordings',()=>{
+ assert.deepEqual(reactionInterval(7,15,60),{start:7,end:22,trimmed:false});
+ assert.deepEqual(reactionInterval(10,15,60),{start:10,end:25,trimmed:false});
+ assert.deepEqual(reactionInterval(7.125,15.375,60),{start:7.125,end:22.5,trimmed:false});
+ assert.deepEqual(reactionInterval(7,15,20),{start:7,end:20,trimmed:true});
+ assert.deepEqual(reactionInterval(-2,15,60),{start:0,end:13,trimmed:true});
+ for(const values of [[60,15,60],[-20,15,60],[NaN,15,60],[7,0,60],[7,15,Infinity]])assert.equal(reactionInterval(...values),null);
 });

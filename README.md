@@ -228,3 +228,9 @@ No editor, em **Enquadramento → Layout**, escolha **Apenas webcam**. A região
 O modo funciona tanto com a webcam recortada da gravação original quanto com uma reação enviada ou gravada separadamente. Com reação separada, a exportação e a reprodução sincronizada usam somente o áudio da reação, sem o som do vídeo base. O controle de volume da reação continua disponível. Sem fonte separada, o áudio é o da gravação original: se voz e jogo já estiverem misturados nessa faixa, o sistema não os separa.
 
 O intervalo do corte continua pertencendo à linha do tempo do projeto e, com reação separada, deve estar no trecho coberto por ela. Ao voltar para **Webcam + gameplay**, as regiões e a divisão anteriores permanecem guardadas. Novos cortes herdam o layout atual. A verificação de exportação reconhece mudanças de layout; ajustes na gameplay ou na divisão não provocam uma renderização repetida quando o resultado usa apenas webcam.
+
+## Fim automático pela duração da reação (0.4.8)
+
+Ao enviar um vídeo de reação, posicione primeiro o vídeo base no segundo desejado. O envio usa essa posição como início e ajusta o fim automaticamente à duração real do arquivo. Gravações feitas pelo sistema usam o início registrado durante a captura. Por exemplo, reação de 15 segundos começando em 7 segundos gera um corte de 7 a 22 segundos.
+
+Alterar **Reação começa no vídeo base em (segundos)** também move os dois limites do corte automaticamente, mantendo os enquadramentos. É possível encurtar o corte manualmente depois. Se a reação ultrapassar o início ou o fim do original, o sistema avisa e usa apenas o trecho em comum; sincronizações sem sobreposição são recusadas. Salve o corte para conservar o novo intervalo.

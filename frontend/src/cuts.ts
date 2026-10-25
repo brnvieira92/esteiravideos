@@ -10,3 +10,10 @@ export function newCutFrom(current:Cut,time:number,duration:number,name='Novo co
   camFlip:current.camFlip??false,reactionId:current.reactionId,reactionOffset:current.reactionOffset,baseVolume:current.baseVolume,reactionVolume:current.reactionVolume,layout:current.layout,game:{...current.game},cam:{...current.cam},split:current.split,
   fontSize:current.fontSize,margin:current.margin,outline:current.outline};
 }
+
+// Use the actual probed reaction duration, retaining sub-second precision.
+export function reactionInterval(offset:number,duration:number,baseDuration:number){
+ if(![offset,duration,baseDuration].every(Number.isFinite)||duration<=0||baseDuration<=0)return null;
+ const start=Math.max(0,offset),end=Math.min(baseDuration,offset+duration);
+ return start<end?{start,end,trimmed:offset<0||offset+duration>baseDuration}:null;
+}
