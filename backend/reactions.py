@@ -15,7 +15,7 @@ def attach_reaction(d,pid):
     meta=media_meta(row)
     offset=float(d.get('reactionOffset',row['offset']))
     if not math.isfinite(offset): raise ValueError('Sincronização inválida.')
-    if d.get('layout')!='combined': raise ValueError('Use Webcam + gameplay para mesclar a reação com o vídeo base.')
+    if d.get('layout') not in ('combined','webcam'): raise ValueError('Use Webcam + gameplay ou Apenas webcam para o vídeo de reação.')
     if d['start']<offset-.001 or d['end']>offset+meta['duration']+.001:
         raise ValueError('O corte ultrapassa o trecho coberto pela reação. Ajuste o intervalo ou a sincronização.')
     d['reactionOffset']=offset
@@ -30,6 +30,7 @@ def audio_filter(d):
     """Keep both gains explicit and mix without automatic volume reduction."""
     filters=[]; labels=[]
     for index,meta,key in ((0,d['meta'],'baseVolume'),(1,d['reactionMeta'],'reactionVolume')):
+        if index==0 and d.get('layout')=='webcam': continue
         if meta['audio'] and d[key]>0:
             label=f'a{index}'
             filters.append(f"[{index}:a:0]aresample=async=1:first_pts=0,volume={d[key]},apad=whole_dur={d['end']-d['start']}[{label}]")

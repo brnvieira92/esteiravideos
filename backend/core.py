@@ -71,7 +71,7 @@ def validate_cut(d, duration):
     start=float(d.get('start',0)); end=float(d.get('end',0))
     if not 0<=start<end<=duration: raise ValueError('Use 0 ≤ início < fim ≤ duração da gravação.')
     d={**d,'start':start,'end':end,'name':str(d.get('name','Novo corte'))[:150]}
-    if d.get('layout','gameplay') not in ('gameplay','combined'): raise ValueError('Layout inválido.')
+    if d.get('layout','gameplay') not in ('gameplay','combined','webcam'): raise ValueError('Layout inválido.')
     for key in ('game','cam'):
         box=d.get(key,dict(x=0,y=0,w=1,h=1))
         d[key]=normalize_box(box)
@@ -117,6 +117,10 @@ def geometry(d,meta):
         return f'crop={w}:{h}:{x}:{y}'
     def fit(w,h): return f'scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h},setsar=1'
     mirror=',hflip' if d.get('camFlip',False) else ''
+    if d.get('layout')=='webcam':
+        index=1 if d.get('reactionPath') else 0
+        source=d.get('reactionMeta') if index else meta
+        return f"[{index}:v]setpts=PTS-STARTPTS,{crop('cam',source)},{fit(1080,1920)}{mirror}[v]"
     if d.get('layout')=='combined':
         top=int(1920*d['split'])//2*2
         if d.get('reactionPath'):

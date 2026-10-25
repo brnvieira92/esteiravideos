@@ -159,3 +159,9 @@ Chromium em viewport 390×844: pareamento pela interface com checkbox e nome; co
 Instalador 0.4.6 aprovado em Windows Server 2022: [execução 40206576776](https://github.com/brnvieira92/esteiravideos/actions/runs/40206576776), commit `3f1b386`. Compilação, 13 testes de frontend, build/lint, smoke do executável e da cópia instalada em caminho com espaços/acentos, reinício HTTPS com conexão keep-alive anterior, permanência da confiança sem novo código, revogação, encerramento e 43 testes Python aprovados. Artefato `EsteiraVideos-Windows-x64` disponível.
 
 O encerramento do servidor recebeu limite de 5 segundos para drenar requisições, evitando espera indefinida com conexões HTTPS mantidas pelo navegador; em seguida o supervisor encerra o trabalhador e a página de configuração. A reinicialização rápida foi verificada em Linux e no Windows com as mesmas portas e pasta de dados.
+
+## Webcam em tela cheia — versão 0.4.7
+
+49 testes Python e 13 de frontend aprovados em Linux; TypeScript/Vite e lint aprovados. O layout `webcam` recorta `cam` da fonte original ou da reação separada, preenche 1080×1920 e aplica espelhamento, sem empilhar gameplay. Com reação separada, somente sua faixa de áudio é usada; falta de áudio ou volume zero não aciona fallback para o vídeo base. A prévia usa o mesmo recorte e seus gestos atuam somente em `cam`.
+
+Novos testes exportam webcam do original e reação separada, com/sem espelhamento; verificam pixels de ambos os lados no alto e na parte inferior do MP4, resolução, presença de áudio, frequência da voz e ausência da frequência do vídeo base. Testam também reação silenciosa/voz silenciada e a identidade de exportação: mudanças em gameplay/divisão/volume do base não criam outro resultado webcam-only, mas mudar o espelhamento permite nova exportação.

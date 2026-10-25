@@ -220,3 +220,11 @@ A confiança pertence a **este navegador e endereço do computador**. Use o mesm
 O navegador guarda um token aleatório de 256 bits em cookie `__Host-`, Secure, HttpOnly e SameSite Strict. O banco salva apenas seu hash SHA-256, com validade e identificação para revogação; código de pareamento e token puro não são persistidos no banco. A revogação bloqueia as próximas requisições, inclusive após reiniciar. Não usa identificação por IP, impressão digital de hardware ou reconhecimento de navegador para autenticar. Os registros ficam na pasta de dados preservada nas atualizações.
 
 Se o acesso expirar ou for revogado, a interface volta ao pareamento. Durante uma gravação em andamento, ela informa a perda do acesso para permitir finalizar e baixar a cópia antes de recarregar. O último uso mostrado na lista pode ser atualizado com intervalo de até uma hora.
+
+## Webcam em toda a tela — opinião individual (0.4.7)
+
+No editor, em **Enquadramento → Layout**, escolha **Apenas webcam**. A região da webcam passa a ocupar 100% do vídeo vertical 1080×1920, usando o enquadramento já escolhido. Você pode ajustar a região com pinça/arraste na prévia, pelos controles ou selecionando a webcam no vídeo de origem; o espelhamento e as legendas continuam disponíveis. Salve o corte e exporte.
+
+O modo funciona tanto com a webcam recortada da gravação original quanto com uma reação enviada ou gravada separadamente. Com reação separada, a exportação e a reprodução sincronizada usam somente o áudio da reação, sem o som do vídeo base. O controle de volume da reação continua disponível. Sem fonte separada, o áudio é o da gravação original: se voz e jogo já estiverem misturados nessa faixa, o sistema não os separa.
+
+O intervalo do corte continua pertencendo à linha do tempo do projeto e, com reação separada, deve estar no trecho coberto por ela. Ao voltar para **Webcam + gameplay**, as regiões e a divisão anteriores permanecem guardadas. Novos cortes herdam o layout atual. A verificação de exportação reconhece mudanças de layout; ajustes na gameplay ou na divisão não provocam uma renderização repetida quando o resultado usa apenas webcam.
